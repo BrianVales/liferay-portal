@@ -14,7 +14,7 @@
 
 package com.liferay.portal.tools.java.parser;
 
-import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.petra.string.StringBundler;
 
 import java.util.Objects;
 
@@ -123,7 +123,10 @@ public class JavaOperatorExpression extends JavaExpression {
 							}
 						}
 					}
-					else {
+					else if (!Objects.equals(
+								_javaOperator.getCategory(),
+								JavaOperator.Category.RELATIONAL)) {
+
 						newLine = true;
 					}
 

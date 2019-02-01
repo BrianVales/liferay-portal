@@ -14,7 +14,6 @@
 
 package com.liferay.asset.categories.selector.web.display.context;
 
-import com.liferay.asset.categories.selector.web.contants.AssetCategoriesSelectorPortletKeys;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetCategoryServiceUtil;
@@ -55,26 +54,30 @@ public class AssetCategoriesSelectorDisplayContext {
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
 		_request = request;
-
-		_resolvedModuleName = (String)_request.getAttribute(
-			AssetCategoriesSelectorPortletKeys.RESOLVED_MODULE_NAME);
 	}
 
 	public JSONArray getCategoriesJSONArray() throws Exception {
 		ThemeDisplay themeDisplay = (ThemeDisplay)_request.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		JSONArray jsonArray = _getCategoriesJSONArray();
+		JSONArray vocabulariesJSONArray = _getVocabulariesJSONArray();
 
 		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
 
-		jsonObject.put("children", jsonArray);
+		if (vocabulariesJSONArray.length() == 1) {
+			jsonObject = vocabulariesJSONArray.getJSONObject(0);
+		}
+		else {
+			jsonObject.put("children", vocabulariesJSONArray);
+			jsonObject.put("icon", "folder");
+			jsonObject.put("id", "0");
+			jsonObject.put(
+				"name",
+				LanguageUtil.get(themeDisplay.getLocale(), "vocabularies"));
+		}
+
 		jsonObject.put("disabled", true);
 		jsonObject.put("expanded", true);
-		jsonObject.put("icon", "folder");
-		jsonObject.put("id", "0");
-		jsonObject.put(
-			"name", LanguageUtil.get(themeDisplay.getLocale(), "vocabularies"));
 
 		JSONArray rootJSONArray = JSONFactoryUtil.createJSONArray();
 
@@ -103,10 +106,6 @@ public class AssetCategoriesSelectorDisplayContext {
 			_renderResponse.getNamespace() + "selectCategory");
 
 		return _eventName;
-	}
-
-	public String getModuleName() {
-		return _resolvedModuleName;
 	}
 
 	public String getSelectedCategories() {
@@ -158,12 +157,13 @@ public class AssetCategoriesSelectorDisplayContext {
 		AssetVocabulary assetVocabulary =
 			AssetVocabularyLocalServiceUtil.fetchAssetVocabulary(vocabularyId);
 
-		StringBundler sb = new StringBundler(4);
+		StringBundler sb = new StringBundler(5);
 
 		String title = assetVocabulary.getTitle(themeDisplay.getLocale());
 
 		sb.append(HtmlUtil.escape(title));
 
+		sb.append(StringPool.SPACE);
 		sb.append(StringPool.OPEN_PARENTHESIS);
 
 		if (assetVocabulary.getGroupId() == themeDisplay.getCompanyGroupId()) {
@@ -202,29 +202,6 @@ public class AssetCategoriesSelectorDisplayContext {
 		return _singleSelect;
 	}
 
-	private JSONArray _getCategoriesJSONArray() throws Exception {
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
-
-		boolean allowedSelectVocabularies = ParamUtil.getBoolean(
-			_request, "allowedSelectVocabularies");
-
-		for (long vocabularyId : getVocabularyIds()) {
-			JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
-
-			jsonObject.put(
-				"children", _getCategoriesJSONArray(vocabularyId, 0));
-			jsonObject.put("disabled", !allowedSelectVocabularies);
-			jsonObject.put("icon", "folder");
-			jsonObject.put("id", vocabularyId);
-			jsonObject.put("name", getVocabularyTitle(vocabularyId));
-			jsonObject.put("vocabulary", true);
-
-			jsonArray.put(jsonObject);
-		}
-
-		return jsonArray;
-	}
-
 	private JSONArray _getCategoriesJSONArray(
 			long vocabularyId, long categoryId)
 		throws Exception {
@@ -249,7 +226,7 @@ public class AssetCategoriesSelectorDisplayContext {
 				jsonObject.put("children", children);
 			}
 
-			jsonObject.put("icon", "page");
+			jsonObject.put("icon", "categories");
 			jsonObject.put("id", category.getCategoryId());
 			jsonObject.put("name", category.getTitle(themeDisplay.getLocale()));
 
@@ -265,13 +242,35 @@ public class AssetCategoriesSelectorDisplayContext {
 		return jsonArray;
 	}
 
+	private JSONArray _getVocabulariesJSONArray() throws Exception {
+		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+
+		boolean allowedSelectVocabularies = ParamUtil.getBoolean(
+			_request, "allowedSelectVocabularies");
+
+		for (long vocabularyId : getVocabularyIds()) {
+			JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+
+			jsonObject.put(
+				"children", _getCategoriesJSONArray(vocabularyId, 0));
+			jsonObject.put("disabled", !allowedSelectVocabularies);
+			jsonObject.put("icon", "vocabulary");
+			jsonObject.put("id", vocabularyId);
+			jsonObject.put("name", getVocabularyTitle(vocabularyId));
+			jsonObject.put("vocabulary", true);
+
+			jsonArray.put(jsonObject);
+		}
+
+		return jsonArray;
+	}
+
 	private Boolean _allowedSelectVocabularies;
 	private long _categoryId;
 	private String _eventName;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
 	private final HttpServletRequest _request;
-	private final String _resolvedModuleName;
 	private String _selectedCategories;
 	private Boolean _singleSelect;
 	private String _type;

@@ -245,7 +245,11 @@ public class SolrQuerySuggester implements QuerySuggester {
 	}
 
 	protected String getFilterQuery(String field, String value) {
-		return field.concat(StringPool.COLON).concat(value);
+		return field.concat(
+			StringPool.COLON
+		).concat(
+			value
+		);
 	}
 
 	protected long[] getGroupIdsForSuggestions(SearchContext searchContext) {
@@ -266,8 +270,8 @@ public class SolrQuerySuggester implements QuerySuggester {
 
 		// See LPS-72507 and LPS-76500
 
-		if (localization != null) {
-			return localization;
+		if (_localization != null) {
+			return _localization;
 		}
 
 		return LocalizationUtil.getLocalization();
@@ -279,6 +283,10 @@ public class SolrQuerySuggester implements QuerySuggester {
 		}
 
 		return options.get(0);
+	}
+
+	protected void setLocalization(Localization localization) {
+		_localization = localization;
 	}
 
 	@Reference(unbind = "-")
@@ -405,8 +413,6 @@ public class SolrQuerySuggester implements QuerySuggester {
 		}
 	}
 
-	protected Localization localization;
-
 	private static final long _GLOBAL_GROUP_ID = 0;
 
 	private static final float _INFINITE_WEIGHT = 100F;
@@ -419,6 +425,7 @@ public class SolrQuerySuggester implements QuerySuggester {
 	private final StringDistance _defaultStringDistance =
 		new LevensteinDistance();
 	private double _distanceThreshold;
+	private Localization _localization;
 	private NGramQueryBuilder _nGramQueryBuilder;
 	private SolrClientManager _solrClientManager;
 

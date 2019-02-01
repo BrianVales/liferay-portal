@@ -53,6 +53,8 @@ public class ReleaseInfo {
 
 	public static final int RELEASE_7_2_0_BUILD_NUMBER = 7200;
 
+	public static final int RELEASE_7_2_10_BUILD_NUMBER = 7210;
+
 	public static final Date getBuildDate() {
 		DateFormat df = DateFormat.getDateInstance(DateFormat.LONG);
 
@@ -108,7 +110,7 @@ public class ReleaseInfo {
 
 	private static final String _CODE_NAME = "Mueller";
 
-	private static final String _DATE = "January 7, 2019";
+	private static final String _DATE = "January 31, 2019";
 
 	private static final String _NAME = "Liferay Community Edition Portal";
 
@@ -124,7 +126,7 @@ public class ReleaseInfo {
 
 	private static final String _VERSION = "7.2.0";
 
-	private static final String _VERSION_DISPLAY_NAME = "7.2.0 CE M1";
+	private static final String _VERSION_DISPLAY_NAME = "7.2.0 CE M2";
 
 	private static String _releaseInfo;
 	private static String _serverInfo;

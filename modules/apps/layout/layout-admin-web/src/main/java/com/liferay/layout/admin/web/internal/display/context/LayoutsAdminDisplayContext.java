@@ -21,7 +21,6 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemList;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.SafeConsumer;
-import com.liferay.layout.admin.web.internal.constants.LayoutAdminWebKeys;
 import com.liferay.layout.constants.LayoutConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
 import com.liferay.layout.page.template.service.LayoutPageTemplateCollectionLocalServiceUtil;
@@ -44,6 +43,7 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutRevision;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutSetBranch;
+import com.liferay.portal.kernel.model.LayoutType;
 import com.liferay.portal.kernel.model.LayoutTypeController;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
@@ -58,7 +58,6 @@ import com.liferay.portal.kernel.servlet.taglib.ui.BreadcrumbEntry;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -113,8 +112,6 @@ public class LayoutsAdminDisplayContext {
 
 		_liferayPortletRequest.setAttribute(
 			WebKeys.LAYOUT_DESCRIPTIONS, getLayoutDescriptions());
-		_resolvedModuleName = (String)_request.getAttribute(
-			LayoutAdminWebKeys.RESOLVED_MODULE_NAME);
 	}
 
 	public List<DropdownItem> getAddLayoutDropdownItems() {
@@ -516,16 +513,6 @@ public class LayoutsAdminDisplayContext {
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
 		for (Layout layout : layouts) {
-			UnicodeProperties typeSettingsProperties =
-				layout.getTypeSettingsProperties();
-
-			boolean visible = GetterUtil.getBoolean(
-				typeSettingsProperties.getProperty("visible"), true);
-
-			if (!visible) {
-				continue;
-			}
-
 			if (_getActiveLayoutSetBranchId() > 0) {
 				LayoutRevision layoutRevision =
 					LayoutStagingUtil.getLayoutRevision(layout);
@@ -567,6 +554,11 @@ public class LayoutsAdminDisplayContext {
 
 			layoutJSONObject.put(
 				"homePageTitle", _getHomePageTitle(privateLayout));
+
+			LayoutType layoutType = layout.getLayoutType();
+
+			layoutJSONObject.put("parentable", layoutType.isParentable());
+
 			layoutJSONObject.put("plid", layout.getPlid());
 
 			PortletURL portletURL = getPortletURL();
@@ -695,10 +687,6 @@ public class LayoutsAdminDisplayContext {
 			"selPlid", String.valueOf(layout.getPlid()));
 
 		return markAsHomePageLayoutURL.toString();
-	}
-
-	public String getModuleName() {
-		return _resolvedModuleName;
 	}
 
 	public String getMoveLayoutColumnItemURL() {
@@ -1690,7 +1678,6 @@ public class LayoutsAdminDisplayContext {
 	private Boolean _privateLayout;
 	private String _redirect;
 	private final HttpServletRequest _request;
-	private final String _resolvedModuleName;
 	private String _rootNodeName;
 	private Layout _selLayout;
 	private LayoutSet _selLayoutSet;

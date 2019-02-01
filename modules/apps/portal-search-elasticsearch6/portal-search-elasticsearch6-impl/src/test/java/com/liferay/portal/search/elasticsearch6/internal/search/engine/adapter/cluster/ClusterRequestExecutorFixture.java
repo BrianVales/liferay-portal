@@ -22,55 +22,75 @@ import com.liferay.portal.search.engine.adapter.cluster.ClusterRequestExecutor;
  */
 public class ClusterRequestExecutorFixture {
 
-	public ClusterRequestExecutorFixture(
+	public ClusterRequestExecutor getClusterRequestExecutor() {
+		return _clusterRequestExecutor;
+	}
+
+	public void setUp() {
+		ClusterHealthStatusTranslator clusterHealthStatusTranslator =
+			new ClusterHealthStatusTranslatorImpl();
+
+		_clusterRequestExecutor = new ElasticsearchClusterRequestExecutor() {
+			{
+				setHealthClusterRequestExecutor(
+					createHealthClusterRequestExecutor(
+						clusterHealthStatusTranslator,
+						_elasticsearchClientResolver));
+				setStateClusterRequestExecutor(
+					createStateClusterRequestExecutor(
+						_elasticsearchClientResolver));
+				setStatsClusterRequestExecutor(
+					createStatsClusterRequestExecutor(
+						clusterHealthStatusTranslator,
+						_elasticsearchClientResolver));
+			}
+		};
+	}
+
+	protected static HealthClusterRequestExecutor
+		createHealthClusterRequestExecutor(
+			ClusterHealthStatusTranslator clusterHealthStatusTranslator,
+			ElasticsearchClientResolver elasticsearchClientResolver) {
+
+		return new HealthClusterRequestExecutorImpl() {
+			{
+				setClusterHealthStatusTranslator(clusterHealthStatusTranslator);
+				setElasticsearchClientResolver(elasticsearchClientResolver);
+			}
+		};
+	}
+
+	protected static StateClusterRequestExecutor
+		createStateClusterRequestExecutor(
+			ElasticsearchClientResolver elasticsearchClientResolver) {
+
+		return new StateClusterRequestExecutorImpl() {
+			{
+				setElasticsearchClientResolver(elasticsearchClientResolver);
+			}
+		};
+	}
+
+	protected static StatsClusterRequestExecutor
+		createStatsClusterRequestExecutor(
+			ClusterHealthStatusTranslator clusterHealthStatusTranslator,
+			ElasticsearchClientResolver elasticsearchClientResolver) {
+
+		return new StatsClusterRequestExecutorImpl() {
+			{
+				setClusterHealthStatusTranslator(clusterHealthStatusTranslator);
+				setElasticsearchClientResolver(elasticsearchClientResolver);
+			}
+		};
+	}
+
+	protected void setElasticsearchClientResolver(
 		ElasticsearchClientResolver elasticsearchClientResolver) {
 
 		_elasticsearchClientResolver = elasticsearchClientResolver;
 	}
 
-	public ClusterRequestExecutor createExecutor() {
-		return new ElasticsearchClusterRequestExecutor() {
-			{
-				healthClusterRequestExecutor =
-					createHealthClusterRequestExecutor();
-				stateClusterRequestExecutor =
-					createStateClusterRequestExecutor();
-				statsClusterRequestExecutor =
-					createStatsClusterRequestExecutor();
-			}
-		};
-	}
-
-	protected HealthClusterRequestExecutor
-		createHealthClusterRequestExecutor() {
-
-		return new HealthClusterRequestExecutorImpl() {
-			{
-				clusterHealthStatusTranslator = _clusterHealthStatusTranslator;
-				elasticsearchClientResolver = _elasticsearchClientResolver;
-			}
-		};
-	}
-
-	protected StateClusterRequestExecutor createStateClusterRequestExecutor() {
-		return new StateClusterRequestExecutorImpl() {
-			{
-				elasticsearchClientResolver = _elasticsearchClientResolver;
-			}
-		};
-	}
-
-	protected StatsClusterRequestExecutor createStatsClusterRequestExecutor() {
-		return new StatsClusterRequestExecutorImpl() {
-			{
-				clusterHealthStatusTranslator = _clusterHealthStatusTranslator;
-				elasticsearchClientResolver = _elasticsearchClientResolver;
-			}
-		};
-	}
-
-	private final ClusterHealthStatusTranslator _clusterHealthStatusTranslator =
-		new ClusterHealthStatusTranslatorImpl();
-	private final ElasticsearchClientResolver _elasticsearchClientResolver;
+	private ClusterRequestExecutor _clusterRequestExecutor;
+	private ElasticsearchClientResolver _elasticsearchClientResolver;
 
 }

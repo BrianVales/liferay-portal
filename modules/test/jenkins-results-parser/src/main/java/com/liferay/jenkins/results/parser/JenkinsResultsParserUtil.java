@@ -80,6 +80,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang.SystemUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -280,7 +281,13 @@ public class JenkinsResultsParserUtil {
 
 		String[] bashCommands = new String[3];
 
-		bashCommands[0] = "/bin/sh";
+		if (isWindows()) {
+			bashCommands[0] = "C:\\Program Files\\Git\\bin\\sh.exe";
+		}
+		else {
+			bashCommands[0] = "/bin/sh";
+		}
+
 		bashCommands[1] = "-c";
 
 		String commandTerminator = ";";
@@ -292,6 +299,11 @@ public class JenkinsResultsParserUtil {
 		StringBuffer sb = new StringBuffer();
 
 		for (String command : commands) {
+			if (isWindows()) {
+				command = command.replaceAll("\\(", "\\\\\\\\(");
+				command = command.replaceAll("\\)", "\\\\\\\\)");
+			}
+
 			sb.append(command);
 			sb.append(commandTerminator);
 			sb.append(" ");
@@ -1262,14 +1274,28 @@ public class JenkinsResultsParserUtil {
 	}
 
 	public static String getRandomGitHubCacheHostname() {
+		return getRandomGitHubCacheHostname(null);
+	}
+
+	public static String getRandomGitHubCacheHostname(
+		List<String> excludedHostnames) {
+
 		try {
 			Properties buildProperties = getBuildProperties();
 
 			String gitCacheHostnames = buildProperties.getProperty(
 				"github.cache.hostnames");
 
-			return getRandomString(
-				Lists.newArrayList(gitCacheHostnames.split(",")));
+			List<String> gitHubCacheHostnames = Lists.newArrayList(
+				gitCacheHostnames.split(","));
+
+			if (excludedHostnames != null) {
+				for (String excludedHostname : excludedHostnames) {
+					gitHubCacheHostnames.remove(excludedHostname);
+				}
+			}
+
+			return getRandomString(gitHubCacheHostnames);
 		}
 		catch (IOException ioe) {
 			throw new RuntimeException(ioe);
@@ -1600,11 +1626,7 @@ public class JenkinsResultsParserUtil {
 	}
 
 	public static boolean isWindows() {
-		if (File.pathSeparator.equals(";")) {
-			return true;
-		}
-
-		return false;
+		return SystemUtils.IS_OS_WINDOWS;
 	}
 
 	public static String join(String delimiter, List<String> list) {
@@ -2181,18 +2203,27 @@ public class JenkinsResultsParserUtil {
 				urlConnection.connect();
 
 				if (url.startsWith("https://api.github.com")) {
-					int limit = Integer.parseInt(
-						urlConnection.getHeaderField("X-RateLimit-Limit"));
-					int remaining = Integer.parseInt(
-						urlConnection.getHeaderField("X-RateLimit-Remaining"));
-					long reset = Long.parseLong(
-						urlConnection.getHeaderField("X-RateLimit-Reset"));
+					try {
+						int limit = Integer.parseInt(
+							urlConnection.getHeaderField("X-RateLimit-Limit"));
+						int remaining = Integer.parseInt(
+							urlConnection.getHeaderField(
+								"X-RateLimit-Remaining"));
+						long reset = Long.parseLong(
+							urlConnection.getHeaderField("X-RateLimit-Reset"));
 
-					System.out.println(
-						combine(
-							_getGitHubAPIRateLimitStatusMessage(
-								limit, remaining, reset),
-							"\n    ", url));
+						System.out.println(
+							combine(
+								_getGitHubAPIRateLimitStatusMessage(
+									limit, remaining, reset),
+								"\n    ", url));
+					}
+					catch (Exception e) {
+						System.out.println(
+							"Unable to parse GitHub API rate limit headers");
+
+						e.printStackTrace();
+					}
 				}
 
 				StringBuilder sb = new StringBuilder();

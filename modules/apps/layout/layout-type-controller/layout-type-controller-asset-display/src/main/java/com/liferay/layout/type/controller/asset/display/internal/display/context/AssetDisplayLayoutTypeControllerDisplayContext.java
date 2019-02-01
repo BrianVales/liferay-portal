@@ -20,23 +20,16 @@ import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
 import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
 import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalServiceUtil;
 import com.liferay.asset.kernel.model.AssetEntry;
-import com.liferay.fragment.constants.FragmentEntryLinkConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
-import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryServiceUtil;
-import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalServiceUtil;
-import com.liferay.layout.page.template.util.LayoutPageTemplateStructureRenderUtil;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Jürgen Kappler
@@ -44,39 +37,15 @@ import javax.servlet.http.HttpServletResponse;
 public class AssetDisplayLayoutTypeControllerDisplayContext {
 
 	public AssetDisplayLayoutTypeControllerDisplayContext(
-		HttpServletRequest request, HttpServletResponse response) {
+		HttpServletRequest request) {
 
 		_request = request;
-		_response = response;
 
 		_assetEntry = (AssetEntry)request.getAttribute(
 			WebKeys.LAYOUT_ASSET_ENTRY);
 	}
 
-	public AssetEntry getAssetEntry() {
-		return _assetEntry;
-	}
-
-	public String getRenderedContent() throws PortalException {
-		if (_assetEntry == null) {
-			return StringPool.BLANK;
-		}
-
-		LayoutPageTemplateStructure layoutPageTemplateStructure =
-			LayoutPageTemplateStructureLocalServiceUtil.
-				fetchLayoutPageTemplateStructure(
-					_assetEntry.getGroupId(),
-					PortalUtil.getClassNameId(
-						LayoutPageTemplateEntry.class.getName()),
-					_getLayoutPageTemplateEntryId(), true);
-
-		return LayoutPageTemplateStructureRenderUtil.renderLayoutContent(
-			_request, _response, layoutPageTemplateStructure,
-			FragmentEntryLinkConstants.ASSET_DISPLAY_PAGE,
-			_getAssetDisplayFieldsValues());
-	}
-
-	private Map<String, Object> _getAssetDisplayFieldsValues()
+	public Map<String, Object> getAssetDisplayFieldsValues()
 		throws PortalException {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)_request.getAttribute(
@@ -98,7 +67,11 @@ public class AssetDisplayLayoutTypeControllerDisplayContext {
 			_assetEntry, themeDisplay.getLocale());
 	}
 
-	private long _getLayoutPageTemplateEntryId() {
+	public AssetEntry getAssetEntry() {
+		return _assetEntry;
+	}
+
+	public long getLayoutPageTemplateEntryId() {
 		AssetDisplayPageEntry assetDisplayPageEntry =
 			AssetDisplayPageEntryLocalServiceUtil.fetchAssetDisplayPageEntry(
 				_assetEntry.getGroupId(), _assetEntry.getClassNameId(),
@@ -133,6 +106,5 @@ public class AssetDisplayLayoutTypeControllerDisplayContext {
 
 	private final AssetEntry _assetEntry;
 	private final HttpServletRequest _request;
-	private final HttpServletResponse _response;
 
 }

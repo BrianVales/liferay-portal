@@ -38,10 +38,17 @@ public class GitUtil {
 	public static RemoteGitBranch getRemoteGitBranch(
 		String remoteGitBranchName, File workingDirectory, String remoteURL) {
 
-		List<RemoteGitBranch> remoteGitBranches = getRemoteGitBranches(
+		RemoteGitRef remoteGitRef = getRemoteGitRef(
 			remoteGitBranchName, workingDirectory, remoteURL);
 
-		return remoteGitBranches.get(0);
+		if (!(remoteGitRef instanceof RemoteGitBranch)) {
+			throw new RuntimeException(
+				JenkinsResultsParserUtil.combine(
+					"Unable to find remote Git branch ", remoteGitBranchName,
+					" on remote URL ", remoteURL));
+		}
+
+		return (RemoteGitBranch)remoteGitRef;
 	}
 
 	public static List<RemoteGitBranch> getRemoteGitBranches(
@@ -79,8 +86,44 @@ public class GitUtil {
 	public static RemoteGitRef getRemoteGitRef(
 		String remoteGitBranchName, File workingDirectory, String remoteURL) {
 
-		List<RemoteGitRef> remoteGitRefs = getRemoteGitRefs(
-			remoteGitBranchName, workingDirectory, remoteURL);
+		List<RemoteGitRef> remoteGitRefs = null;
+
+		if (remoteURL.contains(_GITHUB_CACHE_PROXY_HOSTNAME)) {
+			List<String> usedGitHubCacheHostnames = new ArrayList<>(3);
+
+			while ((usedGitHubCacheHostnames.size() < 3) &&
+				   ((remoteGitRefs == null) || remoteGitRefs.isEmpty())) {
+
+				String gitHubCacheHostname =
+					JenkinsResultsParserUtil.getRandomGitHubCacheHostname(
+						usedGitHubCacheHostnames);
+
+				String gitHubCacheRemoteURL = remoteURL.replace(
+					_GITHUB_CACHE_PROXY_HOSTNAME, gitHubCacheHostname);
+
+				try {
+					remoteGitRefs = getRemoteGitRefs(
+						remoteGitBranchName, workingDirectory,
+						gitHubCacheRemoteURL);
+				}
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				usedGitHubCacheHostnames.add(gitHubCacheHostname);
+			}
+		}
+		else {
+			remoteGitRefs = getRemoteGitRefs(
+				remoteGitBranchName, workingDirectory, remoteURL);
+		}
+
+		if ((remoteGitRefs == null) || remoteGitRefs.isEmpty()) {
+			throw new RuntimeException(
+				JenkinsResultsParserUtil.combine(
+					"Unable to find remote Git ref ", remoteGitBranchName,
+					" on remote URL ", remoteURL));
+		}
 
 		return remoteGitRefs.get(0);
 	}
@@ -100,18 +143,11 @@ public class GitUtil {
 
 		if (remoteGitBranchName != null) {
 			command = JenkinsResultsParserUtil.combine(
-				"git ls-remote -h ",
-				remoteURL.replace(
-					"github-dev.liferay.com",
-					JenkinsResultsParserUtil.getRandomGitHubCacheHostname()),
-				" ", remoteGitBranchName);
+				"git ls-remote -h ", remoteURL, " ", remoteGitBranchName);
 		}
 		else {
 			command = JenkinsResultsParserUtil.combine(
-				"git ls-remote -h ",
-				remoteURL.replace(
-					"github-dev.liferay.com",
-					JenkinsResultsParserUtil.getRandomGitHubCacheHostname()));
+				"git ls-remote -h ", remoteURL);
 		}
 
 		ExecutionResult executionResult = executeBashCommands(
@@ -211,13 +247,26 @@ public class GitUtil {
 		Process process = null;
 
 		int retries = 0;
+		List<String> usedGitHubCacheHostnames = new ArrayList<>(maxRetries);
 
 		while (retries < maxRetries) {
+			String[] modifiedCommands = Arrays.copyOf(
+				commands, commands.length);
+
+			String gitHubCacheHostname =
+				JenkinsResultsParserUtil.getRandomGitHubCacheHostname(
+					usedGitHubCacheHostnames);
+
+			for (int i = 0; i < modifiedCommands.length; i++) {
+				modifiedCommands[i] = modifiedCommands[i].replace(
+					_GITHUB_CACHE_PROXY_HOSTNAME, gitHubCacheHostname);
+			}
+
 			try {
 				retries++;
 
 				process = JenkinsResultsParserUtil.executeBashCommands(
-					true, workingDirectory, timeout, commands);
+					true, workingDirectory, timeout, modifiedCommands);
 
 				break;
 			}
@@ -228,6 +277,8 @@ public class GitUtil {
 							Arrays.toString(commands),
 						e);
 				}
+
+				usedGitHubCacheHostnames.add(gitHubCacheHostname);
 
 				System.out.println(
 					"Unable to execute bash commands retrying... ");
@@ -262,6 +313,9 @@ public class GitUtil {
 		return new ExecutionResult(
 			process.exitValue(), standardErr.trim(), standardOut.trim());
 	}
+
+	private static final String _GITHUB_CACHE_PROXY_HOSTNAME =
+		"github-dev.liferay.com";
 
 	private static final Pattern _gitHubRefURLPattern = Pattern.compile(
 		JenkinsResultsParserUtil.combine(

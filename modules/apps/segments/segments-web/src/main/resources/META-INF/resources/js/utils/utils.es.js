@@ -1,8 +1,20 @@
 import uniqueId from 'lodash.uniqueid';
+import {CONJUNCTIONS} from 'utils/constants.es';
 
 const GROUP_ID_NAMESPACE = 'group_';
 
 const SPLIT_REGEX = /({\d+})/g;
+
+/**
+ * Creates a new group object with items.
+ * @param {Array} items The items to add to the new group.
+ * @return {Object} The new group object.
+ */
+export const createNewGroup = items => ({
+	conjunctionName: CONJUNCTIONS.AND,
+	groupId: generateGroupId(),
+	items
+});
 
 /**
  * Generates a unique group id.
@@ -49,6 +61,24 @@ export function getChildGroupIds(criteria) {
 	}
 
 	return childGroupIds;
+}
+
+/**
+ * Gets the list of operators for a supported type.
+ * Used for displaying the operators available for each criteria row.
+ * @param {Array} operators The full list of supported operators.
+ * @param {Object} propertyTypes A map of property types and the operators
+ * supported for each type.
+ * @param {string} type The type to get the supported operators for.
+ */
+export function getSupportedOperatorsFromType(operators, propertyTypes, type) {
+	return operators.filter(
+		operator => {
+			const validOperators = propertyTypes[type];
+
+			return validOperators && validOperators.includes(operator.name);
+		}
+	);
 }
 
 /**
@@ -123,4 +153,21 @@ export function sub(langKey, args, join = true) {
 	}
 
 	return join ? keyArray.join('') : keyArray;
+}
+
+export function dateToInternationalHuman(
+	ISOString,
+	localeKey = navigator.language
+) {
+	const date = new Date(ISOString);
+
+	const options = {
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric'
+	};
+
+	const intl = new Intl.DateTimeFormat(localeKey, options);
+
+	return intl.format(date);
 }

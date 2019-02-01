@@ -12,6 +12,7 @@ class StateSyncronizer extends Component {
 		localizedName: Config.object().value({}),
 		nameEditor: Config.any(),
 		namespace: Config.string().required(),
+		published: Config.bool(),
 		settingsDDMForm: Config.any(),
 		translationManager: Config.any()
 	};
@@ -34,18 +35,20 @@ class StateSyncronizer extends Component {
 	}
 
 	getState() {
-		const {layoutProvider, localizedDescription, translationManager} = this.props;
+		const {layoutProvider, localizedDescription, localizedName, translationManager} = this.props;
 
-		return {
+		const state = {
 			availableLanguageIds: translationManager.get('availableLocales'),
 			defaultLanguageId: translationManager.get('defaultLocale'),
 			description: localizedDescription,
-			name: this._getLocalizedName(),
+			name: localizedName,
 			pages: layoutProvider.state.pages,
 			paginationMode: layoutProvider.state.paginationMode,
-			rules: [],
+			rules: layoutProvider.state.rules,
 			successPageSettings: layoutProvider.state.successPageSettings
 		};
+
+		return state;
 	}
 
 	isEmpty() {
@@ -64,23 +67,14 @@ class StateSyncronizer extends Component {
 
 		const publishedField = settingsDDMForm.getField('published');
 
-		publishedField.set('value', this.published);
+		publishedField.set('value', this.props.published);
+
+		const settings = settingsDDMForm.get('context');
 
 		document.querySelector(`#${namespace}name`).value = JSON.stringify(name);
 		document.querySelector(`#${namespace}description`).value = JSON.stringify(description);
 		document.querySelector(`#${namespace}serializedFormBuilderContext`).value = this._getSerializedFormBuilderContext();
-		document.querySelector(`#${namespace}serializedSettingsContext`).value = JSON.stringify(settingsDDMForm.toJSON());
-	}
-
-	_getLocalizedName() {
-		const {localizedName, translationManager} = this.props;
-		const defaultLocale = translationManager.get('defaultLocale');
-
-		if (!localizedName[defaultLocale].trim()) {
-			localizedName[defaultLocale] = Liferay.Language.get('untitled-form');
-		}
-
-		return localizedName;
+		document.querySelector(`#${namespace}serializedSettingsContext`).value = JSON.stringify(settings);
 	}
 
 	_getSerializedFormBuilderContext() {

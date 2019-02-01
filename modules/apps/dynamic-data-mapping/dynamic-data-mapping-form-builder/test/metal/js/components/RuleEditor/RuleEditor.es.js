@@ -1,7 +1,7 @@
-import './__fixtures__/RuleEditorMockField.es';
+import '../../__fixtures__/MockField.es';
+import dom from 'metal-dom';
 import mockPages from 'mock/mockPages.es';
 import RuleEditor from 'source/components/RuleEditor/RuleEditor.es';
-import {PagesVisitor} from 'source/util/visitors.es';
 
 let component;
 
@@ -97,8 +97,6 @@ describe(
 			() => {
 				afterEach(
 					() => {
-						fetch.resetMocks();
-
 						component.dispose();
 					}
 				);
@@ -106,17 +104,6 @@ describe(
 				beforeEach(
 					() => {
 						jest.useFakeTimers();
-
-						fetch.mockResponse(
-							JSON.stringify(
-								[
-									{
-										id: 'roleA',
-										name: 'Role A'
-									}
-								]
-							)
-						);
 					}
 				);
 
@@ -388,7 +375,7 @@ describe(
 
 								expect(component.refs.conditionOperator0.value).toEqual(['contains']);
 								expect(component.refs.secondOperandTypeSelector0.value).toEqual(['value']);
-								expect(component.refs.secondOperand0.value).toEqual(['123']);
+								expect(component.refs.secondOperand0.value).toEqual('123');
 							}
 						);
 
@@ -476,36 +463,6 @@ describe(
 								jest.runAllTimers();
 
 								expect(component.refs.conditionOperator0.options).toMatchSnapshot();
-							}
-						);
-
-						it(
-							'should fetch roles when rendered',
-							() => {
-								const spy = jest.spyOn(window, 'fetch');
-
-								component = new RuleEditor(
-									{
-										...getBaseConfig()
-									}
-								);
-
-								expect(spy).toHaveBeenCalledWith(component.rolesURL, expect.anything());
-							}
-						);
-
-						it(
-							'should fetch data providers when rendered',
-							() => {
-								const spy = jest.spyOn(window, 'fetch');
-
-								component = new RuleEditor(
-									{
-										...getBaseConfig()
-									}
-								);
-
-								expect(spy).toHaveBeenCalledWith(component.dataProviderInstancesURL, expect.anything());
 							}
 						);
 
@@ -633,7 +590,7 @@ describe(
 
 								jest.runAllTimers();
 
-								component.refs.secondOperand0.emitFieldEdited(['123']);
+								component.refs.secondOperand0.emitFieldEdited('123');
 
 								jest.runAllTimers();
 
@@ -664,7 +621,7 @@ describe(
 
 								expect(component.refs.secondOperandTypeSelector0.value).toEqual(['value']);
 
-								expect(component.refs.secondOperand0.value).toEqual(['123']);
+								expect(component.refs.secondOperand0.value).toEqual('123');
 							}
 						);
 
@@ -689,40 +646,6 @@ describe(
 								jest.runAllTimers();
 
 								expect(component.refs.secondOperandTypeSelector0).toBeFalsy();
-							}
-						);
-
-						it(
-							'should mirror options of a field that has options in second operand when condition compares values',
-							() => {
-								component = new RuleEditor(
-									{
-										...getBaseConfig()
-									}
-								);
-
-								const visitor = new PagesVisitor(component.pages);
-
-								let radioField;
-
-								visitor.mapFields(
-									field => {
-										if (field.fieldName === 'radio') {
-											radioField = field;
-										}
-									}
-								);
-
-								component.refs.firstOperand0.emitFieldEdited(['radio']);
-								component.refs.conditionOperator0.emitFieldEdited(['not-equals-to']);
-
-								jest.runAllTimers();
-
-								component.refs.secondOperandTypeSelector0.emitFieldEdited(['value']);
-
-								jest.runAllTimers();
-
-								expect(component.refs.secondOperand0.options).toEqual(radioField.options);
 							}
 						);
 
@@ -1015,7 +938,7 @@ describe(
 									}
 								);
 
-								component.refs.action0.emitFieldEdited(['autofill']);
+								component.refs.action0.emitFieldEdited(['auto-fill']);
 
 								jest.runAllTimers();
 
@@ -1040,7 +963,7 @@ describe(
 									}
 								);
 
-								component.refs.action0.emitFieldEdited(['autofill']);
+								component.refs.action0.emitFieldEdited(['auto-fill']);
 
 								jest.runAllTimers();
 
@@ -1061,7 +984,7 @@ describe(
 									}
 								);
 
-								component.refs.action0.emitFieldEdited(['autofill']);
+								component.refs.action0.emitFieldEdited(['auto-fill']);
 
 								jest.runAllTimers();
 
@@ -1116,13 +1039,67 @@ describe(
 				);
 
 				describe(
-					'When the user choose a data provider as a target',
+					'When a rule is not fully filled with actions and conditions',
 					() => {
 						it(
-							'should show the inputs and outputs fields if Input and Outputs were not empty',
-							done => {
+							'the save rule button must be disabled',
+							() => {
+								component = new RuleEditor(
+									{
+										...getBaseConfig()
+									}
+								);
 
-								const spy = jest.spyOn(window, 'fetch');
+								expect(component.refs.save.disabled).toBe(true);
+								expect(component.refs.cancel.disabled).toBe(false);
+							}
+						);
+					}
+				);
+
+				describe(
+					'When a rule is fully filled with actions and conditions',
+					() => {
+						it(
+							'the save rule button must be enabled',
+							() => {
+								component = new RuleEditor(
+									{
+										...getBaseConfig()
+									}
+								);
+
+								component.refs.firstOperand0.emitFieldEdited(['radio']);
+
+								jest.runAllTimers();
+
+								component.refs.conditionOperator0.emitFieldEdited(['not-contains']);
+
+								jest.runAllTimers();
+
+								component.refs.secondOperandTypeSelector0.emitFieldEdited(['value']);
+
+								jest.runAllTimers();
+
+								component.refs.secondOperand0.emitFieldEdited(['123']);
+
+								component.refs.action0.emitFieldEdited(['show']);
+
+								jest.runAllTimers();
+
+								component.refs.actionTarget0.emitFieldEdited(['date']);
+
+								jest.runAllTimers();
+
+								expect(component.refs.save.disabled).toBe(false);
+								expect(component.refs.cancel.disabled).toBe(false);
+							}
+						);
+
+						it(
+							'should be possible to save a rule',
+							() => {
+								jest.useFakeTimers();
 
 								component = new RuleEditor(
 									{
@@ -1130,279 +1107,166 @@ describe(
 									}
 								);
 
-								component.refs.action0.emitFieldEdited(['autofill']);
+								const spy = jest.spyOn(component, 'emit');
+
+								component.refs.firstOperand0.emitFieldEdited(['radio']);
 
 								jest.runAllTimers();
 
-								fetch.mockResponse(
-									JSON.stringify(
-										{
-											inputs: [
-												{
-													label: 'Nome',
-													name: 'Name',
-													required: false,
-													type: 'text'
-												},
-												{
-													label: 'Outro Nome',
-													name: 'Name',
-													required: true,
-													type: 'text'
-												}
-											],
-											outputs: [
-												{
-													name: 'Name',
-													type: 'text'
-												}
-											]
-										}
-									)
+								component.refs.conditionOperator0.emitFieldEdited(['not-contains']);
+
+								jest.runAllTimers();
+
+								component.refs.secondOperandTypeSelector0.emitFieldEdited('value');
+
+								jest.runAllTimers();
+
+								component.refs.secondOperand0.emitFieldEdited('123');
+
+								component.refs.action0.emitFieldEdited(['show']);
+
+								jest.runAllTimers();
+
+								component.refs.actionTarget0.emitFieldEdited(['date']);
+
+								jest.runAllTimers();
+
+								dom.triggerEvent(component.refs.save.element, 'click', {});
+
+								jest.runAllTimers();
+
+								expect(spy).toHaveBeenCalledWith(
+									'ruleAdded',
+									{
+										actions: [
+											{
+												action: 'show',
+												label: 'date',
+												target: 'date'
+											}
+										],
+										conditions: [
+											{
+												operands: [
+													{
+														label: 'Radio Field',
+														repeatable: undefined,
+														type: 'field',
+														value: 'radio'
+													},
+													{
+														label: '123',
+														type: 'field',
+														value: '123'
+													}
+												],
+												operator: 'not-contains'
+											}
+										],
+										['logical-operator']: 'or',
+										ruleEditedIndex: undefined
+									}
 								);
+							}
+						);
 
-								component.refs.actionTarget0.emitFieldEdited(['36808']);
-
-								component.once(
-									'rendered',
-									() => {
-										if (component.actions[0].inputs) {
-											expect(component.refs.action0dataProviderInput0).toBeTruthy();
-										}
-										if (component.actions[0].outputs) {
-											expect(component.refs.action0dataProviderOutput0).toBeTruthy();
-										}
-										done();
+						it(
+							'should be possible to cancel a rule',
+							() => {
+								component = new RuleEditor(
+									{
+										...getBaseConfig()
 									}
 								);
 
+								const spy = jest.spyOn(component, 'emit');
+
+								component.refs.firstOperand0.emitFieldEdited(['radio']);
+
 								jest.runAllTimers();
 
-								const url = component.dataProviderInstanceParameterSettingsURL.slice(0, dataProviderInstanceParameterSettingsURL.length - 1);
+								component.refs.conditionOperator0.emitFieldEdited(['not-contains']);
 
-								expect(spy).toHaveBeenCalledWith(
-									`${url}?ddmDataProviderInstanceId=36808`,
-									expect.anything()
+								jest.runAllTimers();
+
+								component.refs.secondOperandTypeSelector0.emitFieldEdited(['value']);
+
+								jest.runAllTimers();
+
+								component.refs.secondOperand0.emitFieldEdited(['123']);
+
+								component.refs.action0.emitFieldEdited(['show']);
+
+								jest.runAllTimers();
+
+								component.refs.actionTarget0.emitFieldEdited(['date']);
+
+								jest.runAllTimers();
+
+								dom.triggerEvent(component.refs.cancel.element, 'click', {});
+
+								jest.runAllTimers();
+
+								expect(spy).toHaveBeenCalledWith('ruleCancel', expect.anything());
+							}
+						);
+
+						it(
+							'should edit an existent rule',
+							() => {
+								component = new RuleEditor(
+									{
+										...getBaseConfig(),
+										rule: {
+											actions: [
+												{
+													action: 'require',
+													target: 'text1'
+												}
+											],
+											conditions: [
+												{
+													operands: [
+														{
+															type: 'field',
+															value: 'text1'
+														},
+														{
+															type: 'field',
+															value: 'text2'
+														}
+													],
+													operator: 'equals-to'
+												}
+											],
+											['logical-operator']: 'OR'
+										}
+									}
 								);
 
-								jest.runAllTimers();
-							}
-						);
-					}
-				);
+								const spy = jest.spyOn(component, 'emit');
 
-				it(
-					'should not show Inputs and Outputss if the dataprovider\'s inputs and outputs were empty',
-					done => {
-
-						component = new RuleEditor(
-							{
-								...getBaseConfig()
-							}
-						);
-
-						component.refs.action0.emitFieldEdited(['autofill']);
-
-						jest.runAllTimers();
-
-						fetch.mockResponse(
-							JSON.stringify(
-								{
-									inputs: [],
-									outputs: []
-								}
-							)
-						);
-
-						component.refs.actionTarget0.emitFieldEdited(['36777']);
-
-						component.once(
-							'rendered',
-							() => {
-								const divHasChildren = document.querySelector('.action-rule-data-provider .col-md-12').hasChildNodes();
-
-								expect(divHasChildren).toBeFalsy();
-								done();
-							}
-						);
-
-						jest.runAllTimers();
-					}
-				);
-
-				it(
-					'should not reset inputs and output if the same data provider were selected',
-					done => {
-						component = new RuleEditor(
-							{
-								...getBaseConfig()
-							}
-						);
-
-						component.refs.action0.emitFieldEdited(['autofill']);
-
-						jest.runAllTimers();
-
-						fetch.mockResponse(
-							JSON.stringify(
-								{
-									inputs: [
-										{
-											label: 'Nome',
-											name: 'Name',
-											required: false,
-											type: 'text'
-										},
-										{
-											label: 'Outro Nome',
-											name: 'Name',
-											required: true,
-											type: 'text'
-										}
-									],
-									outputs: [
-										{
-											name: 'Name',
-											type: 'list'
-										}
-									]
-								}
-							)
-						);
-
-						component.refs.actionTarget0.emitFieldEdited(['36808']);
-
-						jest.runAllTimers();
-
-						component.once(
-							'rendered',
-							() => {
-								component.refs.action0dataProviderOutput0.emitFieldEdited(['Name']);
+								component.refs.firstOperand0.emitFieldEdited(['radio']);
 
 								jest.runAllTimers();
 
-								component.refs.actionTarget0.emitFieldEdited(['36808']);
+								component.refs.conditionOperator0.emitFieldEdited(['not-contains']);
 
 								jest.runAllTimers();
 
-								expect(component.refs.action0dataProviderOutput0.value).toEqual(['Name']);
-								done();
-							}
-						);
-					}
-				);
-
-				it(
-					'should display only select field types option in the output sections according to the List Type configured in the Data Provider ',
-					done => {
-						component = new RuleEditor(
-							{
-								...getBaseConfig()
-							}
-						);
-
-						component.refs.action0.emitFieldEdited(['autofill']);
-
-						jest.runAllTimers();
-
-						fetch.mockResponse(
-							JSON.stringify(
-								{
-									inputs: [
-										{
-											label: 'Nome',
-											name: 'Name',
-											required: false,
-											type: 'text'
-										},
-										{
-											label: 'Outro Nome',
-											name: 'Name',
-											required: true,
-											type: 'text'
-										}
-									],
-									outputs: [
-										{
-											name: 'Name',
-											type: 'list'
-										}
-									]
-								}
-							)
-						);
-
-						component.refs.actionTarget0.emitFieldEdited(['36808']);
-
-						jest.runAllTimers();
-
-						component.once(
-							'rendered',
-							() => {
-								const fieldOptions = component.actions[0].outputs[0].fieldOptions;
+								component.refs.secondOperandTypeSelector0.emitFieldEdited(['value']);
 
 								jest.runAllTimers();
 
-								expect(fieldOptions.some(({type}) => type === 'text')).toBeFalsy();
-								done();
-							}
-						);
-					}
-				);
-
-				it(
-					'should display any field types option in the output sections according to the List Text configured in the Data Provider ',
-					done => {
-						component = new RuleEditor(
-							{
-								...getBaseConfig()
-							}
-						);
-
-						component.refs.action0.emitFieldEdited(['autofill']);
-
-						jest.runAllTimers();
-
-						fetch.mockResponse(
-							JSON.stringify(
-								{
-									inputs: [
-										{
-											label: 'Nome',
-											name: 'Name',
-											required: false,
-											type: 'text'
-										},
-										{
-											label: 'Outro Nome',
-											name: 'Name',
-											required: true,
-											type: 'text'
-										}
-									],
-									outputs: [
-										{
-											name: 'Name',
-											type: 'list'
-										}
-									]
-								}
-							)
-						);
-
-						component.refs.actionTarget0.emitFieldEdited(['36808']);
-
-						jest.runAllTimers();
-
-						component.once(
-							'rendered',
-							() => {
-								const fieldOptions = component.actions[0].inputs[0].fieldOptions;
+								component.refs.secondOperand0.emitFieldEdited(['123']);
 
 								jest.runAllTimers();
 
-								expect(fieldOptions.some(({type}) => type === 'text')).toBeTruthy();
-								done();
+								dom.triggerEvent(component.refs.save.element, 'click', {});
+
+								jest.runAllTimers();
+
+								expect(spy).toHaveBeenCalledWith('ruleAdded', expect.anything());
 							}
 						);
 					}
@@ -1415,30 +1279,6 @@ describe(
 describe(
 	'Regression',
 	() => {
-		afterEach(
-			() => {
-				fetch.resetMocks();
-
-				component.dispose();
-			}
-		);
-
-		beforeEach(
-			() => {
-				jest.useFakeTimers();
-
-				fetch.mockResponse(
-					JSON.stringify(
-						[
-							{
-								id: 'roleA',
-								name: 'Role A'
-							}
-						]
-					)
-				);
-			}
-		);
 
 		describe(
 			'LPS-86162 The filled value is being lost when re-selecting Value in the rule builder',
@@ -1469,7 +1309,7 @@ describe(
 
 						jest.runAllTimers();
 
-						expect(component.refs.secondOperand0.value).toEqual(['123']);
+						expect(component.refs.secondOperand0.value).toEqual('123');
 					}
 				);
 			}

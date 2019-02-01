@@ -47,6 +47,13 @@ public class JavaSourceProcessorTest extends BaseSourceProcessorTestCase {
 	}
 
 	@Test
+	public void testDeserializationSecurity() throws Exception {
+		test(
+			"DeserializationSecurity.testjava",
+			"Use ProtectedObjectInputStream instead of new ObjectInputStream");
+	}
+
+	@Test
 	public void testDiamondOperator() throws Exception {
 		test("DiamondOperator.testjava");
 	}
@@ -66,6 +73,16 @@ public class JavaSourceProcessorTest extends BaseSourceProcessorTestCase {
 	@Test
 	public void testDuplicateVariables() throws Exception {
 		test("DuplicateVariables.testjava", "Duplicate _STRING_2");
+	}
+
+	@Test
+	public void testElseStatement() throws Exception {
+		test("ElseStatement1.testjava");
+		test(
+			"ElseStatement2.testjava",
+			"Else statement is not needed because of the 'return' statement " +
+				"on line 26",
+			28);
 	}
 
 	@Test
@@ -113,15 +130,25 @@ public class JavaSourceProcessorTest extends BaseSourceProcessorTestCase {
 		test(
 			"IfClauseParentheses.testjava",
 			new String[] {
-				"Missing parentheses", "Missing parentheses",
-				"Missing parentheses", "Missing parentheses",
-				"Missing parentheses",
+				"Missing parentheses around the left hand side argument of " +
+					"the '||' operator",
+				"Missing parentheses around the right hand side argument of " +
+					"the '||' operator",
+				"Missing parentheses around the right hand side argument of " +
+					"the '||' operator",
+				"Missing parentheses around the right hand side argument of " +
+					"the '||' operator",
+				"Missing parentheses around the left hand side argument of " +
+					"the '&&' operator",
+				"Missing parentheses around the left hand side argument of " +
+					"the '&&' operator",
 				"Unnecessary parentheses around expression.",
 				"Redundant parentheses",
 				"Unnecessary parentheses around expression.",
-				"Missing parentheses"
+				"Missing parentheses between the '&&' operator and the '||' " +
+					"operator"
 			},
-			new Integer[] {25, 29, 33, 39, 43, 43, 47, 51, 59});
+			new Integer[] {25, 25, 29, 33, 39, 43, 43, 47, 51, 59});
 	}
 
 	@Test
@@ -196,6 +223,35 @@ public class JavaSourceProcessorTest extends BaseSourceProcessorTestCase {
 			});
 		test("IncorrectLineBreaks2.testjava");
 	}
+
+	@Test
+	public void testIncorrectOperatorOrder() throws Exception {
+		test(
+			"IncorrectOperatorOrder.testjava",
+			new String[] {
+				"'3' should be on the right hand side of the operator",
+				"'+3' should be on the right hand side of the operator",
+				"'-3' should be on the right hand side of the operator",
+				"'3' should be on the right hand side of the operator",
+				"'+3' should be on the right hand side of the operator",
+				"'-3' should be on the right hand side of the operator",
+				"'3' should be on the right hand side of the operator",
+				"'+3' should be on the right hand side of the operator",
+				"'-3' should be on the right hand side of the operator",
+				"'3' should be on the right hand side of the operator",
+				"'+3' should be on the right hand side of the operator",
+				"'-3' should be on the right hand side of the operator",
+				"'3' should be on the right hand side of the operator",
+				"'+3' should be on the right hand side of the operator",
+				"'-3' should be on the right hand side of the operator",
+				"'3' should be on the right hand side of the operator",
+				"'+3' should be on the right hand side of the operator",
+				"'-3' should be on the right hand side of the operator"
+			},
+			new Integer[] {
+				53, 57, 61, 97, 101, 105, 141, 145, 149, 185, 189, 193, 229,
+				233, 237, 273, 277, 281});
+		}
 
 	@Test
 	public void testIncorrectParameterNames() throws Exception {

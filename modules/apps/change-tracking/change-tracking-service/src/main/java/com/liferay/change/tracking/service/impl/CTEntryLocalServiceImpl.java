@@ -14,7 +14,7 @@
 
 package com.liferay.change.tracking.service.impl;
 
-import com.liferay.change.tracking.exception.DuplicateCTEEntryException;
+import com.liferay.change.tracking.exception.DuplicateCTEntryException;
 import com.liferay.change.tracking.model.CTEntry;
 import com.liferay.change.tracking.service.base.CTEntryLocalServiceBaseImpl;
 import com.liferay.portal.kernel.dao.orm.QueryDefinition;
@@ -68,24 +68,30 @@ public class CTEntryLocalServiceImpl extends CTEntryLocalServiceBaseImpl {
 
 	@Override
 	public List<CTEntry> fetchCTEntries(
-		long collectionId, long resourcePrimKey,
+		long ctCollectionId, long resourcePrimKey,
 		QueryDefinition<CTEntry> queryDefinition) {
 
-		return ctEntryFinder.findByCTCollectionId(
-			collectionId, resourcePrimKey, queryDefinition);
+		return ctEntryFinder.findByC_R(
+			ctCollectionId, resourcePrimKey, queryDefinition);
 	}
 
 	@Override
 	public List<CTEntry> fetchCTEntries(
-		long collectionId, QueryDefinition<CTEntry> queryDefinition) {
+		long ctCollectionId, QueryDefinition<CTEntry> queryDefinition) {
 
-		return ctEntryFinder.findByCTCollectionId(
-			collectionId, 0, queryDefinition);
+		return ctEntryFinder.findByC_R(ctCollectionId, 0, queryDefinition);
 	}
 
 	@Override
 	public CTEntry fetchCTEntry(long classNameId, long classPK) {
 		return ctEntryPersistence.fetchByC_C(classNameId, classPK);
+	}
+
+	@Override
+	public CTEntry fetchCTEntry(
+		long ctCollectionId, long classNameId, long classPK) {
+
+		return ctEntryFinder.findByC_C_C(ctCollectionId, classNameId, classPK);
 	}
 
 	private void _validate(long classNameId, long classPK, long ctCollectionId)
@@ -94,7 +100,7 @@ public class CTEntryLocalServiceImpl extends CTEntryLocalServiceBaseImpl {
 		CTEntry ctEntry = ctEntryPersistence.fetchByC_C(classNameId, classPK);
 
 		if (ctEntry != null) {
-			throw new DuplicateCTEEntryException();
+			throw new DuplicateCTEntryException();
 		}
 
 		ctCollectionLocalService.getCTCollection(ctCollectionId);

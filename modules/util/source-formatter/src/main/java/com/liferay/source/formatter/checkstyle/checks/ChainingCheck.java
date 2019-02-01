@@ -15,9 +15,9 @@
 package com.liferay.source.formatter.checkstyle.checks;
 
 import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.source.formatter.checks.util.JavaSourceUtil;
@@ -106,15 +106,6 @@ public class ChainingCheck extends BaseCheck {
 					chain, "getClass", methodCallDetailAST, detailAST);
 
 				String name1 = chain.get(0);
-
-				if ((name1.equals("getParamValue") ||
-					 name1.equals("getValue")) &&
-					DetailASTUtil.hasParentWithTokenType(
-						detailAST, TokenTypes.ENUM_DEF)) {
-
-					continue;
-				}
-
 				String name2 = chain.get(1);
 
 				if (name1.equals("concat") || name2.equals("concat")) {

@@ -21,11 +21,12 @@ public class FragmentWebKeys {
 
 	public static final String FRAGMENT_COLLECTIONS = "FRAGMENT_COLLECTIONS";
 
+	public static final String FRAGMENT_ENTRY_DROPDOWN_DEFAULT_EVENT_HANDLER =
+		"FRAGMENT_ENTRY_DROPDOWN_DEFAULT_EVENT_HANDLER";
+
 	public static final String FRAGMENT_ENTRY_PROCESSOR_REGISTRY =
 		"FRAGMENT_ENTRY_PROCESSOR_REGISTRY";
 
 	public static final String ITEM_SELECTOR = "ITEM_SELECTOR";
-
-	public static final String RESOLVED_MODULE_NAME = "RESOLVED_MODULE_NAME";
 
 }

@@ -14,7 +14,7 @@
 
 package com.liferay.portal.tools.java.parser;
 
-import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.petra.string.StringBundler;
 
 import java.util.List;
 
@@ -36,12 +36,24 @@ public class JavaClassCall extends JavaExpression {
 		return _hasBody;
 	}
 
+	public boolean hasParameterValueJavaExpressions() {
+		return !_parameterValueJavaExpressions.isEmpty();
+	}
+
 	public void setEmptyBody(boolean emptyBody) {
 		_emptyBody = emptyBody;
 	}
 
 	public void setHasBody(boolean hasBody) {
 		_hasBody = hasBody;
+	}
+
+	public void setStatementCondition(boolean statementCondition) {
+		_statementCondition = statementCondition;
+	}
+
+	public void setUseChainStyle(boolean useChainStyle) {
+		_useChainStyle = useChainStyle;
 	}
 
 	@Override
@@ -88,7 +100,16 @@ public class JavaClassCall extends JavaExpression {
 		}
 
 		if (!_parameterValueJavaExpressions.isEmpty()) {
-			if (forceLineBreak && !_hasBody) {
+			if (!_statementCondition && _useChainStyle) {
+				appendNewLine(
+					sb, _parameterValueJavaExpressions, indent, maxLineLength);
+
+				sb.append("\n");
+				sb.append(originalIndent);
+				sb.append(")");
+				sb.append(suffix);
+			}
+			else if (forceLineBreak && !_hasBody) {
 				appendNewLine(
 					sb, _parameterValueJavaExpressions, indent, "",
 					")" + suffix, maxLineLength);
@@ -109,6 +130,11 @@ public class JavaClassCall extends JavaExpression {
 			}
 
 			sb.append(originalIndent);
+
+			if (prefix.startsWith("try (")) {
+				sb.append("\t");
+			}
+
 			sb.append("}");
 			sb.append(originalSuffix);
 		}
@@ -121,5 +147,7 @@ public class JavaClassCall extends JavaExpression {
 	private final List<JavaType> _genericJavaTypes;
 	private boolean _hasBody;
 	private final List<JavaExpression> _parameterValueJavaExpressions;
+	private boolean _statementCondition;
+	private boolean _useChainStyle;
 
 }

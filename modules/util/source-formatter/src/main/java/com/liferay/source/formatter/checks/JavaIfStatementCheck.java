@@ -15,10 +15,10 @@
 package com.liferay.source.formatter.checks;
 
 import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.tools.ToolsUtil;
@@ -227,16 +227,15 @@ public class JavaIfStatementCheck extends IfStatementCheck {
 								ifClause, previousLine + "\n" + originalLine,
 								previousLine + StringPool.SPACE + trimmedLine);
 						}
-						else {
-							String newPreviousLine =
-								previousLine + StringPool.SPACE + linePart;
-							String newLine = StringUtil.replaceFirst(
-								originalLine, linePart, StringPool.BLANK);
 
-							return StringUtil.replace(
-								ifClause, previousLine + "\n" + originalLine,
-								newPreviousLine + "\n" + newLine);
-						}
+						String newPreviousLine =
+							previousLine + StringPool.SPACE + linePart;
+						String newLine = StringUtil.replaceFirst(
+							originalLine, linePart, StringPool.BLANK);
+
+						return StringUtil.replace(
+							ifClause, previousLine + "\n" + originalLine,
+							newPreviousLine + "\n" + newLine);
 					}
 				}
 			}
@@ -354,7 +353,8 @@ public class JavaIfStatementCheck extends IfStatementCheck {
 				StringPool.SPACE
 			});
 
-		checkIfClauseParentheses(ifClauseSingleLine, fileName, lineNumber);
+		checkIfClauseParentheses(
+			ifClauseSingleLine, fileName, lineNumber, false);
 
 		while (true) {
 			String newIfClause = _formatIfClause(ifClause);

@@ -29,6 +29,9 @@ import com.liferay.apio.architect.identifier.Identifier;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+
+import javax.validation.constraints.NotNull;
 
 /**
  * @author Víctor Galán
@@ -37,6 +40,7 @@ import java.util.List;
 public interface Dummy extends Identifier<Long> {
 
 	@Field("applicationRelativeUrl")
+	@NotNull
 	@RelativeURL(fromApplication = true)
 	public default String getApplicationRelativeUrl() {
 		return "/application";
@@ -59,31 +63,37 @@ public interface Dummy extends Identifier<Long> {
 	}
 
 	@Field("booleanField1")
+	@NotNull
 	public default Boolean getBooleanField1() {
 		return true;
 	}
 
 	@Field("booleanField2")
+	@NotNull
 	public default Boolean getBooleanField2() {
 		return false;
 	}
 
 	@Field("booleanListField1")
+	@NotNull
 	public default List<Boolean> getBooleanListField1() {
 		return asList(true, true, false);
 	}
 
 	@Field("booleanListField2")
+	@NotNull
 	public default List<Boolean> getBooleanListField2() {
 		return asList(false, true, true);
 	}
 
 	@Field("dateField1")
+	@NotNull
 	public default Date getDateField1() {
 		return new Date(1L);
 	}
 
 	@Field("dateField2")
+	@NotNull
 	public default Date getDateField2() {
 		return new Date(200000L);
 	}
@@ -95,76 +105,96 @@ public interface Dummy extends Identifier<Long> {
 
 	@Field("linkToChildCollection1")
 	@LinkTo(resource = IntegerIdentifier.class, resourceType = CHILD_COLLECTION)
+	@NotNull
 	public default Integer getLinkToChildCollection1() {
 		return 1;
 	}
 
 	@Field("linkToChildCollection2")
 	@LinkTo(resource = StringIdentifier.class, resourceType = CHILD_COLLECTION)
+	@NotNull
 	public default String getLinkToChildCollection2() {
 		return "2d1d";
 	}
 
+	@Field(mode = READ_ONLY, value = "linkToChildCollectionList")
+	@LinkTo(resource = IntegerIdentifier.class, resourceType = CHILD_COLLECTION)
+	@NotNull
+	public default List<Integer> getLinkToChildCollectionList() {
+		return asList(1, 2, 3);
+	}
+
 	@Field("linkToSingle1")
 	@LinkTo(resource = IntegerIdentifier.class)
+	@NotNull
 	public default Integer getLinkToSingle1() {
 		return 1;
 	}
 
 	@Field("linkToSingle2")
 	@LinkTo(resource = StringIdentifier.class)
+	@NotNull
 	public default String getLinkToSingle2() {
 		return "2d1d";
 	}
 
 	@Field("numberField1")
+	@NotNull
 	public default Integer getNumberField1() {
 		return 10;
 	}
 
 	@Field("numberField2")
+	@NotNull
 	public default Long getNumberField2() {
 		return 20L;
 	}
 
 	@Field("numberListField1")
+	@NotNull
 	public default List<Long> getNumberListField1() {
 		return asList(1L, 2L, 3L);
 	}
 
 	@Field("numberListField2")
+	@NotNull
 	public default List<Long> getNumberListField2() {
 		return asList(4L, 5L, 6L);
 	}
 
 	@Field(mode = READ_ONLY, value = "relativeUrl1")
+	@NotNull
 	@RelativeURL
 	public default String getRelativeUrl1() {
 		return "/first";
 	}
 
 	@Field("relativeUrl2")
+	@NotNull
 	@RelativeURL
 	public default String getRelativeUrl2() {
 		return "/second";
 	}
 
 	@Field("stringField1")
+	@NotNull
 	public default String getStringField1() {
 		return "string1";
 	}
 
-	@Field("stringField2")
-	public default String getStringField2() {
-		return "string2";
+	@Field("stringFieldOptional")
+	public default Optional<String> getStringFieldOptional() {
+		return Optional.of("string2");
 	}
 
 	@Field("stringListField1")
+	@NotNull
 	public default List<String> getStringListField1() {
 		return asList("one", "two", "three");
 	}
 
 	@Field("stringListField2")
+	@NotNull
 	public default List<String> getStringListField2() {
 		return asList("four", "five", "six");
 	}

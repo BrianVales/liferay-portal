@@ -27,6 +27,7 @@ context.put("name", renderResponse.getNamespace() + "backgroundColor");
 
 <soy:component-renderer
 	context="<%= context %>"
-	module='<%= portletConfigurationCSSPortletDisplayContext.getResolvedModuleName() + "/js/ColorPickerInput.es" %>'
+	module="js/ColorPickerInput.es"
+	servletContext="<%= application %>"
 	templateNamespace="com.liferay.portlet.configuration.css.web.ColorPickerInput.render"
 />

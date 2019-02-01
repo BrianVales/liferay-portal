@@ -3,11 +3,22 @@ import {PropTypes} from 'prop-types';
 import ClayButton from '../shared/ClayButton.es';
 import ClayIcon from '../shared/ClayIcon.es';
 import ClaySelect from '../shared/ClaySelect.es';
-import {CONJUNCTIONS} from '../../utils/constants.es';
+import DecimalInput from '../inputs/DecimalInput.es';
+import DateInput from '../inputs/DateInput.es';
+import BooleanInput from '../inputs/BooleanInput.es';
+import SelectEntityInput from '../inputs/SelectEntityInput.es';
+import IntegerInput from '../inputs/IntegerInput.es';
+import StringInput from '../inputs/StringInput.es';
 import {DragSource as dragSource, DropTarget as dropTarget} from 'react-dnd';
 import {DragTypes} from '../../utils/drag-types.es';
+import {PROPERTY_TYPES} from '../../utils/constants.es';
 import getCN from 'classnames';
-import {generateGroupId, sub} from '../../utils/utils.es';
+import {
+	createNewGroup,
+	dateToInternationalHuman,
+	getSupportedOperatorsFromType,
+	sub
+} from '../../utils/utils.es';
 
 const acceptedDragTypes = [
 	DragTypes.CRITERIA_ROW,
@@ -42,7 +53,8 @@ function drop(props, monitor) {
 		index: destIndex,
 		onChange,
 		onMove,
-		supportedOperators
+		supportedOperators,
+		supportedPropertyTypes
 	} = props;
 
 	const {
@@ -51,23 +63,33 @@ function drop(props, monitor) {
 		index: startIndex
 	} = monitor.getItem();
 
-	const {operatorName, propertyName, value = ''} = droppedCriterion;
+	const {
+		defaultValue,
+		operatorName,
+		propertyName,
+		type,
+		value
+	} = droppedCriterion;
+
+	const droppedCriterionValue = value || defaultValue;
+
+	const operators = getSupportedOperatorsFromType(
+		supportedOperators,
+		supportedPropertyTypes,
+		type
+	);
 
 	const newCriterion = {
 		operatorName: operatorName ?
 			operatorName :
-			supportedOperators[0].name,
+			operators[0].name,
 		propertyName,
-		value
-	};
-
-	const newGroup = {
-		conjunctionName: CONJUNCTIONS.AND,
-		groupId: generateGroupId(),
-		items: [criterion, newCriterion]
+		value: droppedCriterionValue
 	};
 
 	const itemType = monitor.getItemType();
+
+	const newGroup = createNewGroup([criterion, newCriterion]);
 
 	if (itemType === DragTypes.PROPERTY) {
 		onChange(newGroup);
@@ -128,9 +150,14 @@ class CriteriaRow extends Component {
 		modelLabel,
 		propertyLabel,
 		operatorLabel,
-		value
-	) =>
-		sub(
+		value,
+		type
+	) => {
+		const parsedValue = (type === PROPERTY_TYPES.DATE) ?
+			dateToInternationalHuman(value) :
+			value;
+
+		return sub(
 			Liferay.Language.get('x-with-property-x-x-x'),
 			[
 				<span key="model-name">
@@ -139,15 +166,16 @@ class CriteriaRow extends Component {
 				<b key="property">
 					{propertyLabel}
 				</b>,
-				<span key="operator">
+				<span className="operator" key="operator">
 					{operatorLabel}
 				</span>,
 				<b key="value">
-					{value}
+					{parsedValue}
 				</b>
 			],
 			false
 		);
+	}
 
 	/**
 	 * Gets the selected item object with a `name` and `label` property for a
@@ -155,7 +183,7 @@ class CriteriaRow extends Component {
 	 * idSelected for name and label.
 	 * @param {Array} list The list of objects to search through.
 	 * @param {string} idSelected The name to match in each object in the list.
-	 * @return {object} An object with a `name` and `label` property.
+	 * @return {object} An object with a `name`, `label` and `type` property.
 	 */
 	_getSelectedItem = (list, idSelected) => {
 		const selectedItem = list.find(item => item.name === idSelected);
@@ -164,7 +192,8 @@ class CriteriaRow extends Component {
 			selectedItem :
 			{
 				label: idSelected,
-				name: idSelected
+				name: idSelected,
+				type: PROPERTY_TYPES.STRING
 			};
 	}
 
@@ -194,6 +223,53 @@ class CriteriaRow extends Component {
 			}
 		);
 	};
+
+	_handleTypedInputChange = (value, type) => {
+		const {criterion, onChange} = this.props;
+
+		if (Array.isArray(value)) {
+			const items = value.map(
+				item => ({
+					...criterion,
+					value: item
+				})
+			);
+
+			onChange(createNewGroup(items));
+		}
+		else {
+			onChange(
+				{
+					...criterion,
+					type,
+					value
+				}
+			);
+		}
+	}
+
+	_renderValueInput = (selectedProperty, value) => {
+		const inputComponentsMap = {
+			[PROPERTY_TYPES.BOOLEAN]: BooleanInput,
+			[PROPERTY_TYPES.DATE]: DateInput,
+			[PROPERTY_TYPES.DOUBLE]: DecimalInput,
+			[PROPERTY_TYPES.ID]: SelectEntityInput,
+			[PROPERTY_TYPES.INTEGER]: IntegerInput,
+			[PROPERTY_TYPES.STRING]: StringInput
+		};
+
+		const InputComponent = inputComponentsMap[selectedProperty.type] ||
+			inputComponentsMap[PROPERTY_TYPES.STRING];
+
+		return (
+			<InputComponent
+				onChange={this._handleTypedInputChange}
+				options={selectedProperty.options}
+				selectEntity={selectedProperty.selectEntity}
+				value={value}
+			/>
+		);
+	}
 
 	render() {
 		const {
@@ -227,12 +303,10 @@ class CriteriaRow extends Component {
 
 		const propertyType = selectedProperty ? selectedProperty.type : '';
 
-		const filteredSupportedOperators = supportedOperators.filter(
-			operator => {
-				const validOperators = supportedPropertyTypes[propertyType];
-
-				return validOperators && validOperators.includes(operator.name);
-			}
+		const filteredSupportedOperators = getSupportedOperatorsFromType(
+			supportedOperators,
+			supportedPropertyTypes,
+			propertyType
 		);
 
 		const classes = getCN(
@@ -285,12 +359,7 @@ class CriteriaRow extends Component {
 								selected={selectedOperator && selectedOperator.name}
 							/>
 
-							<input
-								className="criterion-input form-control"
-								onChange={this._handleInputChange('value')}
-								type="text"
-								value={value}
-							/>
+							{this._renderValueInput(selectedProperty, value)}
 
 							<ClayButton
 								borderless
@@ -314,7 +383,8 @@ class CriteriaRow extends Component {
 									modelLabel,
 									propertyLabel,
 									operatorLabel,
-									value
+									value,
+									selectedProperty.type
 								)}
 							</span>
 						</div>

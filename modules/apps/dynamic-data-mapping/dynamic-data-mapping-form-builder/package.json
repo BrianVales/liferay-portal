@@ -43,8 +43,29 @@
 						"newline-after-var": 2,
 						"no-console": 0,
 						"no-unknown-property": 0,
+						"react/jsx-sort-props": 2,
 						"react/jsx-uses-react": 0,
 						"react/jsx-uses-vars": 2,
+						"react/sort-comp": [
+							2,
+							{
+								"groups": {
+									"lifecycle": [
+										"created",
+										"willAttach",
+										"attached",
+										"disposed",
+										"disposeInternal",
+										"prepareStateForRender",
+										"rendered",
+										"/^sync.+$",
+										"willReceiveProps",
+										"willReceiveState",
+										"willUpdate"
+									]
+								}
+							}
+						],
 						"require-jsdoc": 0
 					}
 				}
@@ -94,7 +115,7 @@
 		"eslint-plugin-react": "^7.4.0",
 		"jest": "^23.6.0",
 		"jest-fetch-mock": "^1.6.6",
-		"liferay-jest-junit-reporter": "0.0.4",
+		"liferay-jest-junit-reporter": "1.0.0",
 		"liferay-npm-bundler": "^2.2.1",
 		"metal-jest-serializer": "^2.0.0",
 		"metal-tools-soy": "^6.0.0",
@@ -148,9 +169,9 @@
 		"csf": "csf src/**/*.es.js src/**/*.soy test/**/*.es.js --fail-on-errors",
 		"format": "npm run csf -- -i",
 		"start": "node watch.js",
-		"test": "npm run build-soy-tests && cross-env NODE_ENV=test jest --coverage && npm run clean",
 		"test:coverage:open": "opn build/coverage/lcov-report/index.html",
-		"test:snapshots": "npm run build-soy-tests && NODE_ENV=test jest --coverage -u && npm run clean"
+		"test:snapshots": "npm run build-soy-tests && NODE_ENV=test jest --coverage -u && npm run clean",
+		"test_DISABLED": "npm run build-soy-tests && cross-env NODE_ENV=test jest --coverage && npm run clean"
 	},
 	"version": "2.0.0"
 }

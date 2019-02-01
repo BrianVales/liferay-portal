@@ -53,11 +53,10 @@ import org.osgi.framework.BundleContext;
 /**
  * @author André de Oliveira
  */
-public class ElasticsearchFixture
-	implements ElasticsearchClientResolver, IndicesAdminClientSupplier {
+public class ElasticsearchFixture implements ElasticsearchClientResolver {
 
 	public ElasticsearchFixture(Class clazz) {
-		this(clazz.getSimpleName());
+		this(getSimpleName(clazz));
 	}
 
 	public ElasticsearchFixture(String subdirName) {
@@ -118,11 +117,11 @@ public class ElasticsearchFixture
 
 		clusterHealthRequest.timeout(new TimeValue(10, TimeUnit.MINUTES));
 		clusterHealthRequest.waitForActiveShards(
-			healthExpectations.activeShards);
+			healthExpectations.getActiveShards());
 		clusterHealthRequest.waitForNodes(
-			String.valueOf(healthExpectations.numberOfNodes));
+			String.valueOf(healthExpectations.getNumberOfNodes()));
 		clusterHealthRequest.waitForNoRelocatingShards(true);
-		clusterHealthRequest.waitForStatus(healthExpectations.status);
+		clusterHealthRequest.waitForStatus(healthExpectations.getStatus());
 
 		ActionFuture<ClusterHealthResponse> health = clusterAdminClient.health(
 			clusterHealthRequest);
@@ -151,7 +150,6 @@ public class ElasticsearchFixture
 		return getIndexRequestBuilder.get();
 	}
 
-	@Override
 	public IndicesAdminClient getIndicesAdminClient() {
 		AdminClient adminClient = getAdminClient();
 
@@ -170,6 +168,14 @@ public class ElasticsearchFixture
 
 	public void tearDown() throws Exception {
 		destroyNode();
+	}
+
+	protected static String getSimpleName(Class clazz) {
+		while (clazz.isAnonymousClass()) {
+			clazz = clazz.getEnclosingClass();
+		}
+
+		return clazz.getSimpleName();
 	}
 
 	protected void addClusterLoggingThresholdContributor(

@@ -16,7 +16,6 @@ package com.liferay.portal.search.elasticsearch6.internal.filter;
 
 import com.liferay.portal.search.elasticsearch6.internal.ElasticsearchIndexingFixture;
 import com.liferay.portal.search.elasticsearch6.internal.connection.ElasticsearchFixture;
-import com.liferay.portal.search.elasticsearch6.internal.connection.LiferayIndexCreator;
 import com.liferay.portal.search.test.util.filter.BaseDateRangeFilterTestCase;
 import com.liferay.portal.search.test.util.indexing.BaseIndexingTestCase;
 import com.liferay.portal.search.test.util.indexing.IndexingFixture;
@@ -97,12 +96,13 @@ public class ElasticsearchDateRangeFilterTest
 
 	@Override
 	protected IndexingFixture createIndexingFixture() throws Exception {
-		ElasticsearchFixture elasticsearchFixture = new ElasticsearchFixture(
-			ElasticsearchDateRangeFilterTest.class.getSimpleName());
-
-		return new ElasticsearchIndexingFixture(
-			elasticsearchFixture, BaseIndexingTestCase.COMPANY_ID,
-			new LiferayIndexCreator(elasticsearchFixture));
+		return new ElasticsearchIndexingFixture() {
+			{
+				setCompanyId(BaseIndexingTestCase.COMPANY_ID);
+				setElasticsearchFixture(new ElasticsearchFixture(getClass()));
+				setLiferayMappingsAddedToIndex(true);
+			}
+		};
 	}
 
 }

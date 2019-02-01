@@ -14,8 +14,8 @@
 
 package com.liferay.portal.tools.java.parser;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.util.StringBundler;
 
 import java.util.List;
 
@@ -26,6 +26,18 @@ public class JavaMethodCall extends JavaExpression {
 
 	public JavaMethodCall(String methodName) {
 		_methodName = new JavaSimpleValue(methodName);
+	}
+
+	public int getChainSize() {
+		JavaExpression chainedJavaExpression = getChainedJavaExpression();
+
+		if (!(chainedJavaExpression instanceof JavaMethodCall)) {
+			return 0;
+		}
+
+		JavaMethodCall javaMethodCall = (JavaMethodCall)chainedJavaExpression;
+
+		return javaMethodCall.getChainSize() + 1;
 	}
 
 	public List<JavaExpression> getParameterValueJavaExpressions() {
@@ -42,10 +54,29 @@ public class JavaMethodCall extends JavaExpression {
 		_parameterValueJavaExpressions = parameterValueJavaExpressions;
 	}
 
+	public void setStatementCondition(boolean statementCondition) {
+		_statementCondition = statementCondition;
+	}
+
+	public void setUseChainStyle(boolean useChainStyle) {
+		_useChainStyle = useChainStyle;
+
+		JavaExpression chainedJavaExpression = getChainedJavaExpression();
+
+		if (chainedJavaExpression instanceof JavaMethodCall) {
+			JavaMethodCall javaMethodCall =
+				(JavaMethodCall)chainedJavaExpression;
+
+			javaMethodCall.setUseChainStyle(useChainStyle);
+		}
+	}
+
 	@Override
 	protected String getString(
 		String indent, String prefix, String suffix, int maxLineLength,
 		boolean forceLineBreak) {
+
+		String originalIndent = indent;
 
 		StringBundler sb = new StringBundler();
 
@@ -62,15 +93,35 @@ public class JavaMethodCall extends JavaExpression {
 		}
 
 		if (_parameterValueJavaExpressions.isEmpty()) {
-			append(
-				sb, _methodName, indent, prefix, "()" + suffix, maxLineLength,
-				false);
+			if (_isUseChainStyle(2) && (getChainedJavaExpression() != null)) {
+				append(
+					sb, _methodName, indent, prefix, "(", maxLineLength, false);
+
+				sb.append("\n");
+				sb.append(originalIndent);
+				sb.append(")");
+				sb.append(suffix);
+			}
+			else {
+				append(
+					sb, _methodName, indent, prefix, "()" + suffix,
+					maxLineLength, false);
+			}
 		}
 		else {
 			indent = append(
 				sb, _methodName, indent, prefix, "(", maxLineLength, false);
 
-			if (forceLineBreak) {
+			if (_isUseChainStyle(1)) {
+				appendNewLine(
+					sb, _parameterValueJavaExpressions, indent, maxLineLength);
+
+				sb.append("\n");
+				sb.append(originalIndent);
+				sb.append(")");
+				sb.append(suffix);
+			}
+			else if (forceLineBreak) {
 				appendNewLine(
 					sb, _parameterValueJavaExpressions, indent, "",
 					")" + suffix, maxLineLength);
@@ -85,8 +136,28 @@ public class JavaMethodCall extends JavaExpression {
 		return sb.toString();
 	}
 
+	private boolean _isUseChainStyle(int minChainSize) {
+		if (_statementCondition) {
+			return false;
+		}
+
+		if (_useChainStyle) {
+			return _useChainStyle;
+		}
+
+		if (getChainSize() < minChainSize) {
+			return false;
+		}
+
+		setUseChainStyle(true);
+
+		return true;
+	}
+
 	private List<JavaType> _genericJavaTypes;
 	private final JavaSimpleValue _methodName;
 	private List<JavaExpression> _parameterValueJavaExpressions;
+	private boolean _statementCondition;
+	private boolean _useChainStyle;
 
 }

@@ -14,7 +14,7 @@
 
 package com.liferay.portal.tools.java.parser;
 
-import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.petra.string.StringBundler;
 
 /**
  * @author Hugo Huijser
@@ -39,6 +39,21 @@ public class JavaNewClassInstantiation extends JavaExpression {
 		sb.append(indent);
 
 		indent = "\t" + indent;
+
+		if (_javaClassCall.hasParameterValueJavaExpressions()) {
+			JavaExpression chainedJavaExpression = getChainedJavaExpression();
+
+			if (chainedJavaExpression != null) {
+				_javaClassCall.setUseChainStyle(true);
+
+				if (chainedJavaExpression instanceof JavaMethodCall) {
+					JavaMethodCall javaMethodCall =
+						(JavaMethodCall)chainedJavaExpression;
+
+					javaMethodCall.setUseChainStyle(true);
+				}
+			}
+		}
 
 		if (forceLineBreak) {
 			appendWithLineBreak(

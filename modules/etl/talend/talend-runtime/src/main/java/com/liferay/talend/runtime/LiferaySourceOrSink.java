@@ -232,7 +232,10 @@ public class LiferaySourceOrSink
 	@Override
 	public String getActualWebSiteName(String webSiteURL) throws IOException {
 		JsonNode webSiteNameJsonNode = doApioGetRequest(
-			webSiteURL).path("name");
+			webSiteURL
+		).path(
+			"name"
+		);
 
 		return webSiteNameJsonNode.asText();
 	}
@@ -356,6 +359,8 @@ public class LiferaySourceOrSink
 	/**
 	 * If referenceComponentId is not <code>null</code>, it should return the
 	 * reference connection properties
+	 *
+	 * @review
 	 */
 	public LiferayConnectionProperties getEffectiveConnection(
 		RuntimeContainer runtimeContainer) {
@@ -810,6 +815,7 @@ public class LiferaySourceOrSink
 	 * @param  apioEntryPoint
 	 * @return Map<String, String> Resource ID / URL last path segment, empty
 	 *         otherwise
+	 * @review
 	 */
 	private Map<String, String> _getRootEndpointMap(
 		ApioEntryPoint apioEntryPoint) {

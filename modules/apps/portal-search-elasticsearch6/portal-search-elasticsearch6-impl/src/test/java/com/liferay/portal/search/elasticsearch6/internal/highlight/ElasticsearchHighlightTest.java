@@ -61,10 +61,12 @@ public class ElasticsearchHighlightTest extends BaseHighlightTestCase {
 
 	@Override
 	protected IndexingFixture createIndexingFixture() {
-		return new ElasticsearchIndexingFixture(
-			new ElasticsearchFixture(
-				ElasticsearchHighlightTest.class.getSimpleName()),
-			BaseIndexingTestCase.COMPANY_ID);
+		return new ElasticsearchIndexingFixture() {
+			{
+				setCompanyId(BaseIndexingTestCase.COMPANY_ID);
+				setElasticsearchFixture(new ElasticsearchFixture(getClass()));
+			}
+		};
 	}
 
 }

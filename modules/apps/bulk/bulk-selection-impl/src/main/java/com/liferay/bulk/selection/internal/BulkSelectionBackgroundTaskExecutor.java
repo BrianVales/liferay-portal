@@ -14,8 +14,10 @@
 
 package com.liferay.bulk.selection.internal;
 
+import com.liferay.bulk.selection.BulkSelection;
 import com.liferay.bulk.selection.BulkSelectionAction;
 import com.liferay.bulk.selection.BulkSelectionFactory;
+import com.liferay.bulk.selection.BulkSelectionInputParameters;
 import com.liferay.bulk.selection.internal.constants.BulkSelectionBackgroundTaskConstants;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskConstants;
@@ -25,6 +27,7 @@ import com.liferay.portal.kernel.backgroundtask.BaseBackgroundTaskExecutor;
 import com.liferay.portal.kernel.backgroundtask.display.BackgroundTaskDisplay;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.service.UserLocalService;
 
 import java.io.Serializable;
 
@@ -38,6 +41,7 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Adolfo Pérez
@@ -91,14 +95,29 @@ public class BulkSelectionBackgroundTaskExecutor
 				bulkSelectionFactoryOptional.ifPresent(
 					bulkSelectionFactory -> {
 						try {
+							BulkSelection bulkSelection =
+								bulkSelectionFactory.create(parameterMap);
+
 							Map<String, Serializable> inputMap =
 								(Map<String, Serializable>)taskContextMap.get(
 									BulkSelectionBackgroundTaskConstants.
 										BULK_SELECTION_ACTION_INPUT_MAP);
 
+							boolean assetEntryBulkSelection =
+								(boolean)inputMap.getOrDefault(
+									BulkSelectionInputParameters.
+										ASSET_ENTRY_BULK_SELECTION,
+									false);
+
+							if (assetEntryBulkSelection) {
+								bulkSelection =
+									bulkSelection.toAssetEntryBulkSelection();
+							}
+
 							bulkSelectionAction.execute(
-								bulkSelectionFactory.create(parameterMap),
-								inputMap);
+								_userLocalService.getUser(
+									backgroundTask.getUserId()),
+								bulkSelection, inputMap);
 						}
 						catch (Exception e) {
 							_log.error(e, e);
@@ -147,5 +166,8 @@ public class BulkSelectionBackgroundTaskExecutor
 		BulkSelectionBackgroundTaskExecutor.class);
 
 	private BundleContext _bundleContext;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

@@ -35,27 +35,6 @@ if (Validator.isNotNull(backURL)) {
 }
 
 renderResponse.setTitle(editSegmentsEntryDisplayContext.getTitle(locale));
-
-List<SegmentsCriteriaContributor> segmentsCriteriaContributors = editSegmentsEntryDisplayContext.getSegmentsCriteriaContributors();
-
-JSONArray jsonContributorsArray = JSONFactoryUtil.createJSONArray();
-
-for (int i = 0; i < segmentsCriteriaContributors.size(); i++) {
-	SegmentsCriteriaContributor segmentsCriteriaContributor = segmentsCriteriaContributors.get(i);
-
-	Criteria.Criterion criterion = segmentsCriteriaContributor.getCriterion(editSegmentsEntryDisplayContext.getCriteria());
-
-	JSONObject jsonContributorObject = JSONFactoryUtil.createJSONObject();
-
-	jsonContributorObject.put("conjunctionId", (criterion != null) ? criterion.getConjunction() : StringPool.BLANK);
-	jsonContributorObject.put("conjunctionInputId", renderResponse.getNamespace() + "criterionConjunction" + segmentsCriteriaContributor.getKey());
-	jsonContributorObject.put("initialQuery", (criterion != null) ? criterion.getFilterString() : StringPool.BLANK);
-	jsonContributorObject.put("inputId", renderResponse.getNamespace() + "criterionFilter" + segmentsCriteriaContributor.getKey());
-	jsonContributorObject.put("modelLabel", segmentsCriteriaContributor.getLabel(locale));
-	jsonContributorObject.put("properties", JSONFactoryUtil.createJSONArray(JSONFactoryUtil.looseSerialize(segmentsCriteriaContributor.getFields(locale))));
-
-	jsonContributorsArray.put(jsonContributorObject);
-}
 %>
 
 <liferay-ui:error exception="<%= SegmentsEntryCriteriaException.class %>" message="invalid-criteria" />
@@ -75,33 +54,33 @@ for (int i = 0; i < segmentsCriteriaContributors.size(); i++) {
 
 	<div id="<%= segmentEditRootElementId %>"></div>
 
-	<portlet:renderURL var="previewMembersURL">
-		<portlet:param name="mvcRenderCommandName" value="editSegmentsEntryUsers" />
-		<portlet:param name="tabs1" value="users" />
-		<portlet:param name="redirect" value="<%= currentURL %>" />
+	<portlet:renderURL var="previewMembersURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
+		<portlet:param name="mvcRenderCommandName" value="previewSegmentsEntryUsers" />
 		<portlet:param name="segmentsEntryId" value="<%= String.valueOf(segmentsEntryId) %>" />
 	</portlet:renderURL>
 
 	<liferay-portlet:resourceURL copyCurrentRenderParameters="<%= false %>" id="getSegmentsEntryClassPKsCount" var="getSegmentsEntryClassPKsCountURL" />
 
-	<aui:script require='<%= renderRequest.getAttribute(SegmentsWebKeys.RESOLVED_MODULE_NAME) + "/js/index.es as SegmentEdit" %>'>
+	<aui:script require='<%= npmResolvedPackageName + "/js/index.es as SegmentEdit" %>'>
 		SegmentEdit.default(
 			'<%= segmentEditRootElementId %>',
 			{
-				contributors: <%= jsonContributorsArray %>,
+				contributors: <%= editSegmentsEntryDisplayContext.getContributorsJSONArray() %>,
 				formId: '<portlet:namespace />editSegmentFm',
 				initialMembersCount: <%= editSegmentsEntryDisplayContext.getSegmentsEntryClassPKsCount() %>,
 				initialSegmentActive: <%= (segmentsEntry == null) ? false : segmentsEntry.isActive() %>,
 				initialSegmentName: '<%= (segmentsEntry != null) ? segmentsEntry.getName(locale) : StringPool.BLANK %>',
 				locale: '<%= locale %>',
 				portletNamespace: '<portlet:namespace />',
-				previewMembersURL: '<%= (segmentsEntry != null) ? previewMembersURL : StringPool.BLANK %>',
+				previewMembersURL: '<%= previewMembersURL %>',
+				propertyGroups: <%= editSegmentsEntryDisplayContext.getPropertyGroupsJSONArray(locale) %>,
 				redirect: '<%= HtmlUtil.escape(redirect) %>',
-				requestMembersCountURL: '<%= getSegmentsEntryClassPKsCountURL %>'
+				requestMembersCountURL: '<%= getSegmentsEntryClassPKsCountURL %>',
+				source: '<%= editSegmentsEntryDisplayContext.getSource() %>'
 			},
 			{
-				assetsPath: '<%= PortalUtil.getPathContext(request) %>/assets/',
-				spritemap: '<%= themeDisplay.getPathThemeImages() %>/lexicon/icons.svg'
+				assetsPath: '<%= PortalUtil.getPathContext(request) + "/assets" %>',
+				spritemap: '<%= themeDisplay.getPathThemeImages() + "/lexicon/icons.svg" %>'
 			}
 		);
 	</aui:script>

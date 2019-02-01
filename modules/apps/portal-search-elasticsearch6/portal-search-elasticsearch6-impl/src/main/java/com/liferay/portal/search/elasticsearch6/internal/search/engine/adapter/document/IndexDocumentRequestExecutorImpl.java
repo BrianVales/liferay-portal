@@ -40,7 +40,7 @@ public class IndexDocumentRequestExecutorImpl
 		IndexDocumentRequest indexDocumentRequest) {
 
 		IndexRequestBuilder indexRequestBuilder =
-			bulkableDocumentRequestTranslator.translate(
+			_bulkableDocumentRequestTranslator.translate(
 				indexDocumentRequest, null);
 
 		IndexResponse indexResponse = indexRequestBuilder.get();
@@ -48,14 +48,23 @@ public class IndexDocumentRequestExecutorImpl
 		RestStatus restStatus = indexResponse.status();
 
 		IndexDocumentResponse indexDocumentResponse = new IndexDocumentResponse(
-			restStatus.getStatus());
+			restStatus.getStatus(), indexResponse.getId());
 
 		return indexDocumentResponse;
 	}
 
-	@Reference(target = "(search.engine.impl=Elasticsearch)")
-	protected BulkableDocumentRequestTranslator
+	@Reference(target = "(search.engine.impl=Elasticsearch)", unbind = "-")
+	protected void setBulkableDocumentRequestTranslator(
+		BulkableDocumentRequestTranslator
+			<DeleteRequestBuilder, IndexRequestBuilder,
+			 UpdateRequestBuilder, BulkRequestBuilder>
+				bulkableDocumentRequestTranslator) {
+
+		_bulkableDocumentRequestTranslator = bulkableDocumentRequestTranslator;
+	}
+
+	private BulkableDocumentRequestTranslator
 		<DeleteRequestBuilder, IndexRequestBuilder, UpdateRequestBuilder,
-		 BulkRequestBuilder> bulkableDocumentRequestTranslator;
+		 BulkRequestBuilder> _bulkableDocumentRequestTranslator;
 
 }

@@ -128,21 +128,21 @@ public class CTEngineManagerImpl implements CTEngineManager {
 			return;
 		}
 
-		_ctCollectionLocalService.deleteCTCollection(
-			ctCollectionOptional.get());
+		try {
+			_ctCollectionLocalService.deleteCTCollection(
+				ctCollectionOptional.get());
+		}
+		catch (PortalException pe) {
+			_log.error(
+				"Unable to delete change tracking collection " +
+					ctCollectionId,
+				pe);
+		}
 	}
 
 	@Override
-	public void disableChangeTracking(long userId) {
-		User user = _userLocalService.fetchUser(userId);
-
-		if (user == null) {
-			_log.error("Unable to get user " + userId);
-
-			return;
-		}
-
-		if (!isChangeTrackingEnabled(user.getCompanyId())) {
+	public void disableChangeTracking(long companyId) {
+		if (!isChangeTrackingEnabled(companyId)) {
 			return;
 		}
 
@@ -151,7 +151,7 @@ public class CTEngineManagerImpl implements CTEngineManager {
 				_transactionConfig,
 				() -> {
 					_ctCollectionLocalService.deleteCompanyCTCollections(
-						user.getCompanyId());
+						companyId);
 
 					_productionCTCollection = null;
 
@@ -164,7 +164,7 @@ public class CTEngineManagerImpl implements CTEngineManager {
 	}
 
 	@Override
-	public void enableChangeTracking(long userId) {
+	public void enableChangeTracking(long companyId, long userId) {
 		User user = _userLocalService.fetchUser(userId);
 
 		if (user == null) {
@@ -173,7 +173,7 @@ public class CTEngineManagerImpl implements CTEngineManager {
 			return;
 		}
 
-		if (isChangeTrackingEnabled(user.getCompanyId())) {
+		if (isChangeTrackingEnabled(companyId)) {
 			return;
 		}
 

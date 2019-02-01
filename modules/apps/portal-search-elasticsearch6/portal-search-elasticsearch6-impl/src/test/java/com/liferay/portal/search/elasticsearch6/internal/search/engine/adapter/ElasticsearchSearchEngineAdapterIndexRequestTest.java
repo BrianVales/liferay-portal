@@ -408,6 +408,32 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 		assertIndexMetaDataState(_INDEX_NAME, IndexMetaData.State.OPEN);
 	}
 
+	protected static IndexRequestExecutor createIndexRequestExecutor(
+		ElasticsearchClientResolver elasticsearchClientResolver) {
+
+		IndexRequestExecutorFixture indexRequestExecutorFixture =
+			new IndexRequestExecutorFixture() {
+				{
+					setElasticsearchClientResolver(elasticsearchClientResolver);
+				}
+			};
+
+		indexRequestExecutorFixture.setUp();
+
+		return indexRequestExecutorFixture.getIndexRequestExecutor();
+	}
+
+	protected static SearchEngineAdapter createSearchEngineAdapter(
+		ElasticsearchClientResolver elasticsearchClientResolver) {
+
+		return new ElasticsearchSearchEngineAdapterImpl() {
+			{
+				setIndexRequestExecutor(
+					createIndexRequestExecutor(elasticsearchClientResolver));
+			}
+		};
+	}
+
 	protected void assertIndexMetaDataState(
 		String indexName, IndexMetaData.State indexMetaDataState) {
 
@@ -437,26 +463,6 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 			_indicesAdminClient.prepareCreate(_INDEX_NAME);
 
 		createIndexRequestBuilder.get();
-	}
-
-	protected IndexRequestExecutor createIndexRequestExecutor(
-		ElasticsearchClientResolver elasticsearchClientResolver) {
-
-		IndexRequestExecutorFixture indexRequestExecutorFixture =
-			new IndexRequestExecutorFixture(elasticsearchClientResolver);
-
-		return indexRequestExecutorFixture.createExecutor();
-	}
-
-	protected SearchEngineAdapter createSearchEngineAdapter(
-		ElasticsearchClientResolver elasticsearchClientResolver) {
-
-		return new ElasticsearchSearchEngineAdapterImpl() {
-			{
-				indexRequestExecutor = createIndexRequestExecutor(
-					elasticsearchClientResolver);
-			}
-		};
 	}
 
 	protected void deleteIndex() {

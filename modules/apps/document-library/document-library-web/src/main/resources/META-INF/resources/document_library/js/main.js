@@ -22,15 +22,15 @@ AUI.add(
 						validator: Lang.isString
 					},
 
-					editTagsUrl: {
-						validator: Lang.isString
-					},
-
 					form: {
 						validator: Lang.isObject
 					},
 
 					moveEntryUrl: {
+						validator: Lang.isString
+					},
+
+					npmResolvedPackageName: {
 						validator: Lang.isString
 					},
 
@@ -60,6 +60,7 @@ AUI.add(
 				prototype: {
 					initializer: function(config) {
 						var instance = this;
+
 						var eventHandles = [];
 
 						var documentLibraryContainer = instance.byId('documentLibraryContainer');
@@ -90,6 +91,12 @@ AUI.add(
 
 							eventHandles.push(A.getDoc().once('dragenter', instance._plugUpload, instance, config));
 						}
+
+						Liferay.componentReady('entriesManagementToolbar').then(
+							function(managementToolbar) {
+								eventHandles.push(managementToolbar.on(['selectPageCheckboxChanged'], instance._handleSelectPageCheckboxChanged.bind(instance)));
+							}
+						);
 
 						instance._eventHandles = eventHandles;
 					},
@@ -189,6 +196,21 @@ AUI.add(
 						else {
 							instance._selectedFileEntries = [];
 						}
+
+						instance._isSelectAllChecked = false;
+					},
+
+					_handleSelectPageCheckboxChanged: function(event) {
+						var instance = this;
+
+						var checked = event.data.checked;
+
+						setTimeout(
+							function() {
+								instance._isSelectAllChecked = checked;
+							},
+							100
+						);
 					},
 
 					_moveToFolder: function(obj) {
@@ -240,7 +262,6 @@ AUI.add(
 
 									openMSOfficeError.removeClass('hide');
 								}
-
 							}
 						);
 					},
@@ -249,21 +270,24 @@ AUI.add(
 						var instance = this;
 
 						var editTagsComponent = instance._editTagsComponent;
+						var form = instance.get('form').node;
+						var namespace = instance.NS;
 
 						if (!editTagsComponent) {
-							var form = instance.get('form').node;
-							var namespace = instance.NS;
 							var urlTags = themeDisplay.getPortalURL() + '/o/bulk/asset/tags/' + instance.get('classNameId') + '/common';
 							var urlUpdateTags = themeDisplay.getPortalURL() + '/o/bulk/asset/tags/' + instance.get('classNameId');
 
 							Liferay.Loader.require(
-								'document-library-web/document_library/tags/EditTags.es',
+								instance.get('npmResolvedPackageName') + '/document_library/tags/EditTags.es',
 								function(EditTags) {
 									instance._editTagsComponent = new EditTags.default(
 										{
 											fileEntries: instance._selectedFileEntries,
+											folderId: instance.getFolderId(),
+											portletNamespace: namespace,
 											repositoryId: parseFloat(form.get(namespace + 'repositoryId').val()),
-											spritemap: themeDisplay.getPathThemeImages() + "/lexicon/icons.svg",
+											selectAll: instance._isSelectAllChecked,
+											spritemap: themeDisplay.getPathThemeImages() + '/lexicon/icons.svg',
 											urlTags: urlTags,
 											urlUpdateTags: urlUpdateTags
 										},
@@ -274,6 +298,8 @@ AUI.add(
 						}
 						else {
 							editTagsComponent.fileEntries = instance._selectedFileEntries;
+							editTagsComponent.selectAll = instance._isSelectAllChecked;
+							editTagsComponent.folderId = instance.getFolderId();
 							editTagsComponent.open();
 						}
 					},

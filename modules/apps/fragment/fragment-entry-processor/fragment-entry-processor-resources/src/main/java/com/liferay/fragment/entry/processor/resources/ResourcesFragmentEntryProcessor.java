@@ -26,6 +26,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -54,7 +55,7 @@ public class ResourcesFragmentEntryProcessor implements FragmentEntryProcessor {
 	@Override
 	public String processFragmentEntryLinkHTML(
 			FragmentEntryLink fragmentEntryLink, String html, String mode,
-			Locale locale)
+			Locale locale, List<Long> segmentsIds)
 		throws PortalException {
 
 		return _processResources(fragmentEntryLink, html);
@@ -82,16 +83,11 @@ public class ResourcesFragmentEntryProcessor implements FragmentEntryProcessor {
 		Matcher matcher = _pattern.matcher(code);
 
 		while (matcher.find()) {
-			String imagePath = matcher.group();
-
-			String[] paths = imagePath.split(StringPool.SLASH);
-
-			String fileName = paths[paths.length - 1];
-
 			FileEntry fileEntry =
 				PortletFileRepositoryUtil.fetchPortletFileEntry(
 					fragmentEntry.getGroupId(),
-					fragmentCollection.getResourcesFolderId(), fileName);
+					fragmentCollection.getResourcesFolderId(),
+					matcher.group(1));
 
 			String fileEntryURL = StringPool.BLANK;
 
@@ -101,14 +97,14 @@ public class ResourcesFragmentEntryProcessor implements FragmentEntryProcessor {
 					StringPool.BLANK, false, false);
 			}
 
-			code = code.replace(imagePath, fileEntryURL);
+			code = code.replace(matcher.group(), fileEntryURL);
 		}
 
 		return code;
 	}
 
 	private static final Pattern _pattern = Pattern.compile(
-		"\\.\\./\\.\\./resources/.+\\.[a-zA-Z]+");
+		"\\[resources:(.+?)\\]");
 
 	@Reference
 	private FragmentCollectionService _fragmentCollectionService;

@@ -805,6 +805,32 @@ public abstract class BaseBuild implements Build {
 		return longestRunningTest;
 	}
 
+	public Map<String, String> getMetricLabels() {
+		return new HashMap<>();
+	}
+
+	@Override
+	public List<Build> getModifiedDownstreamBuilds() {
+		return getModifiedDownstreamBuildsByStatus(null);
+	}
+
+	@Override
+	public List<Build> getModifiedDownstreamBuildsByStatus(String status) {
+		List<Build> modifiedDownstreamBuilds = new ArrayList<>();
+
+		for (Build downstreamBuild : downstreamBuilds) {
+			if (downstreamBuild.isBuildModified()) {
+				modifiedDownstreamBuilds.add(downstreamBuild);
+			}
+		}
+
+		if (status != null) {
+			modifiedDownstreamBuilds.retainAll(getDownstreamBuilds(status));
+		}
+
+		return modifiedDownstreamBuilds;
+	}
+
 	@Override
 	public String getOperatingSystem() {
 		return null;
@@ -876,6 +902,15 @@ public abstract class BaseBuild implements Build {
 	@Override
 	public long getStatusAge() {
 		return System.currentTimeMillis() - statusModifiedTime;
+	}
+
+	@Override
+	public long getStatusDuration(String status) {
+		if (statusDurations.containsKey(status)) {
+			return statusDurations.get(status);
+		}
+
+		return 0;
 	}
 
 	@Override
@@ -1097,6 +1132,11 @@ public abstract class BaseBuild implements Build {
 	}
 
 	@Override
+	public boolean isBuildModified() {
+		return _status.equals(_previousStatus);
+	}
+
+	@Override
 	public void reinvoke() {
 		reinvoke(null);
 	}
@@ -1262,6 +1302,8 @@ public abstract class BaseBuild implements Build {
 
 	@Override
 	public void update() {
+		_previousStatus = _status;
+
 		String status = getStatus();
 
 		if (!status.equals("completed")) {
@@ -1319,8 +1361,8 @@ public abstract class BaseBuild implements Build {
 
 					String result = getResult();
 
-					if ((downstreamBuilds.size() ==
-							getDownstreamBuildCount("completed")) &&
+					if ((downstreamBuilds.size() == getDownstreamBuildCount(
+							"completed")) &&
 						(result != null)) {
 
 						setResult(result);
@@ -1774,6 +1816,14 @@ public abstract class BaseBuild implements Build {
 
 	protected FailureMessageGenerator[] getFailureMessageGenerators() {
 		return _FAILURE_MESSAGE_GENERATORS;
+	}
+
+	protected Element getFullConsoleClickHereElement() {
+		return Dom4JUtil.getNewElement(
+			"h5", null, "For full console, click ",
+			Dom4JUtil.getNewAnchorElement(
+				getBuildURL() + "/consoleText", "here"),
+			".");
 	}
 
 	protected abstract Element getGitHubMessageJobResultsElement();
@@ -2338,8 +2388,8 @@ public abstract class BaseBuild implements Build {
 		_result = result;
 
 		if ((_result == null) ||
-			(getDownstreamBuildCount("completed") <
-				getDownstreamBuildCount(null))) {
+			(getDownstreamBuildCount("completed") < getDownstreamBuildCount(
+				null))) {
 
 			setStatus("running");
 		}
@@ -2352,7 +2402,13 @@ public abstract class BaseBuild implements Build {
 		if (_isDifferent(status, _status)) {
 			_status = status;
 
+			long previousStatusModifiedTime = statusModifiedTime;
+
 			statusModifiedTime = System.currentTimeMillis();
+
+			statusDurations.put(
+				_previousStatus,
+				statusModifiedTime - previousStatusModifiedTime);
 
 			if (isParentBuildRoot()) {
 				System.out.println(getBuildMessage());
@@ -2428,6 +2484,7 @@ public abstract class BaseBuild implements Build {
 	protected List<SlaveOfflineRule> slaveOfflineRules =
 		SlaveOfflineRule.getSlaveOfflineRules();
 	protected Long startTime;
+	protected Map<String, Long> statusDurations = new HashMap<>();
 	protected long statusModifiedTime;
 	protected Element upstreamJobFailureMessageElement;
 
@@ -2580,13 +2637,14 @@ public abstract class BaseBuild implements Build {
 
 		_JENKINS_REPORT_TIME_ZONE_NAME = properties.getProperty(
 			"jenkins.report.time.zone");
-	};
+	}
 
 	private int _buildNumber = -1;
 	private JenkinsMaster _jenkinsMaster;
 	private JenkinsSlave _jenkinsSlave;
 	private Map<String, String> _parameters = new HashMap<>();
 	private final Build _parentBuild;
+	private String _previousStatus;
 	private String _result;
 	private String _status;
 

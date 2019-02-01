@@ -11,7 +11,6 @@ import core from 'metal';
 import dom from 'metal-dom';
 import FormBuilder from 'dynamic-data-mapping-form-builder/metal/js/components/FormBuilder/index.es';
 import LayoutProvider from 'dynamic-data-mapping-form-builder/metal/js/components/LayoutProvider/index.es';
-import loader from 'dynamic-data-mapping-form-builder/metal/js/components/FieldsLoader/index.es';
 import PreviewButton from './components/PreviewButton/PreviewButton.es';
 import PublishButton from './components/PublishButton/PublishButton.es';
 import RuleBuilder from 'dynamic-data-mapping-form-builder/metal/js/components/RuleBuilder/index.es';
@@ -36,7 +35,7 @@ class Form extends Component {
 
 		context: Config.shapeOf(
 			{
-				pages: Config.arrayOf(pageStructure),
+				pages: Config.arrayOf(Config.object()),
 				paginationMode: Config.string(),
 				rules: Config.array(),
 				successPageSettings: Config.object()
@@ -187,17 +186,7 @@ class Form extends Component {
 		 * @type {!string}
 		 */
 
-		spritemap: Config.string().required(),
-
-		/**
-		 * Map of translated strings
-		 * @default {}
-		 * @instance
-		 * @memberof Form
-		 * @type {!object}
-		 */
-
-		strings: Config.object().value({})
+		spritemap: Config.string().required()
 	};
 
 	static STATE = {
@@ -264,9 +253,7 @@ class Form extends Component {
 	}
 
 	_saveButtonLabelValueFn() {
-		const {strings} = this.props;
-
-		return strings['save-form'];
+		return Liferay.Language.get('save-form');
 	}
 
 	checkEditorLimit(event, limit) {
@@ -293,7 +280,7 @@ class Form extends Component {
 
 	attached() {
 		const {layoutProvider} = this.refs;
-		const {localizedDescription, localizedName, namespace} = this.props;
+		const {localizedDescription, localizedName, namespace, published} = this.props;
 		const {paginationMode} = this.state;
 
 		this._eventHandler = new EventHandler();
@@ -327,10 +314,18 @@ class Form extends Component {
 						nameEditor: results[0],
 						namespace,
 						paginationMode,
+						published,
 						settingsDDMForm: results[2],
 						translationManager
 					},
 					this.element
+				);
+
+				this.on(
+					'publishedChanged',
+					({newVal}) => {
+						this._stateSyncronizer.props.published = newVal;
+					}
 				);
 
 				this._autoSave = new AutoSave(
@@ -415,15 +410,15 @@ class Form extends Component {
 	}
 
 	_updateAutoSaveMessage({savedAsDraft, modifiedDate}) {
-		const {namespace, strings} = this.props;
+		const {namespace} = this.props;
 
 		let message = '';
 
 		if (savedAsDraft) {
-			message = strings['draft-x'];
+			message = Liferay.Language.get('draft-x');
 		}
 		else {
-			message = strings['saved-x'];
+			message = Liferay.Language.get('saved-x');
 		}
 
 		const autoSaveMessageNode = document.querySelector(`#${namespace}autosaveMessage`);
@@ -474,7 +469,7 @@ class Form extends Component {
 	}
 
 	_updateShareFormIcon(published) {
-		const {saved, strings} = this.props;
+		const {saved} = this.props;
 		const shareFormIcon = document.querySelector('.share-form-icon');
 
 		if (saved && published) {
@@ -483,7 +478,7 @@ class Form extends Component {
 		}
 		else {
 			shareFormIcon.classList.add('ddm-btn-disabled');
-			shareFormIcon.setAttribute('title', strings['publish-the-form-to-get-its-shareable-link']);
+			shareFormIcon.setAttribute('title', Liferay.Language.get('publish-the-form-to-get-its-shareable-link'));
 		}
 	}
 
@@ -497,8 +492,7 @@ class Form extends Component {
 			formInstanceId,
 			namespace,
 			published,
-			spritemap,
-			strings
+			spritemap
 		} = this.props;
 
 		const {saveButtonLabel} = this.state;
@@ -563,18 +557,18 @@ class Form extends Component {
 					</div>
 
 					<ClayModal
-						body={strings['any-unsaved-changes-will-be-lost-are-you-sure-you-want-to-leave']}
+						body={Liferay.Language.get('any-unsaved-changes-will-be-lost-are-you-sure-you-want-to-leave')}
 						footerButtons={
 							[
 								{
 									'alignment': 'right',
-									'label': strings.leave,
+									'label': Liferay.Language.get('leave'),
 									'style': 'secondary',
 									'type': 'close'
 								},
 								{
 									'alignment': 'right',
-									'label': strings.stay,
+									'label': Liferay.Language.get('stay'),
 									'style': 'primary',
 									'type': 'button'
 								}
@@ -583,13 +577,12 @@ class Form extends Component {
 						ref={'discardChangesModal'}
 						size={'sm'}
 						spritemap={spritemap}
-						title={strings['leave-form']}
+						title={Liferay.Language.get('leave-form')}
 					/>
 				</div>
 				{published && (
 					<ShareFormPopover
 						spritemap={spritemap}
-						strings={strings}
 						url={this._createFormURL()}
 					/>
 				)}
@@ -664,8 +657,10 @@ class Form extends Component {
 		const shareFormIcon = document.querySelector('.share-form-icon');
 
 		this.props.published = newVal;
+
 		if (newVal && !saved) {
 			this.props.saved = true;
+
 			shareFormIcon.classList.remove('hide');
 		}
 		else if (!newVal && !saved) {
@@ -747,13 +742,11 @@ class Form extends Component {
 	 */
 
 	_handleSaveButtonClicked(event) {
-		const {strings} = this.props;
-
 		event.preventDefault();
 
 		this.setState(
 			{
-				saveButtonLabel: strings.saving
+				saveButtonLabel: Liferay.Language.get('saving')
 			}
 		);
 
@@ -785,7 +778,7 @@ class Form extends Component {
 	}
 
 	/*
-	 * Returns the map with all translated names or a map with just "Intitled Form" in case
+	 * Returns the map with all translated names or a map with just "Untitled Form" in case
 	 * there are no translations available.
 	 * @private
 	 */
@@ -808,18 +801,18 @@ class Form extends Component {
 			successPageSettings.body[themeDisplay.getLanguageId()] = '';
 		}
 
+		const emptyLocalizableValue = {
+			[themeDisplay.getLanguageId()]: ''
+		};
+
 		if (!context.pages.length) {
 			context = {
 				...context,
 				pages: [
 					{
 						description: '',
-						localizedDescription: {
-							[themeDisplay.getLanguageId()]: ''
-						},
-						localizedTitle: {
-							[themeDisplay.getLanguageId()]: ''
-						},
+						localizedDescription: emptyLocalizableValue,
+						localizedTitle: emptyLocalizableValue,
 						rows: [
 							{
 								columns: [
@@ -838,17 +831,37 @@ class Form extends Component {
 			};
 		}
 
-		return context;
+		return {
+			...context,
+			pages: context.pages.map(
+				page => {
+					let description = '';
+					let localizedDescription = emptyLocalizableValue;
+					let localizedTitle = emptyLocalizableValue;
+					let title = '';
+
+					if (!core.isString(page.description)) {
+						description = page.description[themeDisplay.getLanguageId()];
+						localizedDescription = page.description;
+					}
+
+					if (!core.isString(page.title)) {
+						title = page.title[themeDisplay.getLanguageId()];
+						localizedTitle = page.title;
+					}
+
+					return {
+						...page,
+						description,
+						localizedDescription,
+						localizedTitle,
+						title
+					};
+				}
+			)
+		};
 	}
 }
 
-const DDMForm = (props, container, callback) => {
-	loader(
-		() => callback(new Form(props, container)),
-		props.modules,
-		[...props.dependencies]
-	);
-};
-
-export default DDMForm;
-export {DDMForm};
+export default Form;
+export {Form};

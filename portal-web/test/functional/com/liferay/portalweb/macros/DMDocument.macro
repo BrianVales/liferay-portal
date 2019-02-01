@@ -637,7 +637,10 @@ definition {
 		);
 
 		if ("${dmRepositoryName}" == "true") {
-			AssertElementNotPresent(locator1 = "Message#CHECKOUT_SUCCESS");
+			AssertTextEquals.assertPartialText(
+				locator1 = "Message#CHECKOUT_SUCCESS",
+				value1 = "You now have an indefinite lock on this document. No one else can edit this document until you unlock it. This lock will never expire."
+			);
 		}
 		else {
 			AssertTextEquals.assertPartialText(
@@ -812,6 +815,25 @@ definition {
 			dmDocumentFileEdit = "${dmDocumentFileEdit}",
 			dmDocumentTitleEdit = "${dmDocumentTitleEdit}"
 		);
+
+		if (isSet(versioning)) {
+			Panel.expandPanel(panel = "Versioning");
+
+			Check.checkToggleSwitch(
+				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH",
+				key_toggleSwitchLabel = " Customize the Version Number Increment and Describe My Changes"
+			);
+
+			if ("${revision}" == "Major") {
+				Click(locator1 = "Radio#MAJOR_VERSION");
+			}
+			else if ("${revision}" == "Minor") {
+				Click(locator1 = "Radio#MINOR_VERSION");
+			}
+			else if ("${revision}" == "Current") {
+				Click(locator1 = "Radio#CURRENT_VERSION");
+			}
+		}
 
 		if (isSet(checkedOut)) {
 			Click(locator1 = "Button#SAVE");
@@ -1117,6 +1139,16 @@ definition {
 		Navigator.openWithAppendToBaseURL(
 			urlAppend = "group/${siteURLKey}/~/control_panel/manage?p_p_id=com_liferay_document_library_web_portlet_DLAdminPortlet"
 		);
+	}
+
+	macro removeTag {
+		Click(locator1 = "Button#EDIT");
+
+		Panel.expandPanel(panel = "Categorization");
+
+		var key_removeTag = "${removeTag}";
+
+		Click(locator1 = "Icon#REMOVE_TAG", value1="${removeTag}");
 	}
 
 	macro revertPG {
@@ -2007,7 +2039,7 @@ definition {
 		if (isSet(dmRepositoryName)) {
 			AssertClick.assertTextClickAtAndPause(
 				locator1 = "DocumentsAndMedia#SEARCH_REPOSITORY_TAB",
-				value1 = "repository ${dmRepositoryName}"
+				value1 = "${dmRepositoryName}"
 			);
 		}
 

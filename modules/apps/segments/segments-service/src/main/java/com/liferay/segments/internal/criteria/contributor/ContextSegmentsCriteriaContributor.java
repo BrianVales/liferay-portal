@@ -14,18 +14,16 @@
 
 package com.liferay.segments.internal.criteria.contributor;
 
-import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.segments.criteria.Criteria;
-import com.liferay.segments.criteria.Field;
 import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributor;
+import com.liferay.segments.field.Field;
 import com.liferay.segments.internal.odata.entity.ContextEntityModel;
 import com.liferay.segments.internal.odata.entity.EntityModelFieldMapper;
 
 import java.util.List;
-import java.util.Locale;
-import java.util.ResourceBundle;
+
+import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,21 +49,13 @@ public class ContextSegmentsCriteriaContributor
 	public static final String KEY = "context";
 
 	@Override
-	public List<Field> getFields(Locale locale) {
-		return _entityModelFieldMapper.getFields(_entityModel, locale);
+	public List<Field> getFields(PortletRequest portletRequest) {
+		return _entityModelFieldMapper.getFields(_entityModel, portletRequest);
 	}
 
 	@Override
 	public String getKey() {
 		return KEY;
-	}
-
-	@Override
-	public String getLabel(Locale locale) {
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			locale, getClass());
-
-		return LanguageUtil.get(resourceBundle, getKey());
 	}
 
 	@Override

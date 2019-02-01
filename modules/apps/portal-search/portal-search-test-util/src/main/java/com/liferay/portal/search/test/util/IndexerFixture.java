@@ -21,10 +21,13 @@ import com.liferay.portal.kernel.search.IndexWriterHelperUtil;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Lucas Marques de Paula
@@ -36,56 +39,125 @@ public class IndexerFixture<T> {
 		_indexer = IndexerRegistryUtil.getIndexer(clazz);
 	}
 
-	public void deleteDocument(Document document)
-		throws PortalException, SearchException {
+	public void deleteDocument(Document document) {
+		try {
+			IndexWriterHelperUtil.deleteDocument(
+				_indexer.getSearchEngineId(), TestPropsValues.getCompanyId(),
+				document.getUID(), true);
+		}
+		catch (PortalException pe) {
+			throw new RuntimeException(pe);
+		}
+	}
 
-		IndexWriterHelperUtil.deleteDocument(
-			_indexer.getSearchEngineId(), TestPropsValues.getCompanyId(),
-			document.getUID(), true);
+	public void deleteDocuments(Document[] docs) {
+		try {
+			Stream<Document> stream = Arrays.stream(docs);
+
+			List<String> uids = stream.map(
+				document -> document.getUID()).collect(Collectors.toList());
+
+			IndexWriterHelperUtil.deleteDocuments(
+				_indexer.getSearchEngineId(), TestPropsValues.getCompanyId(),
+				uids, true);
+		}
+		catch (PortalException pe) {
+			throw new RuntimeException(pe);
+		}
 	}
 
 	public void reindex(long companyId) throws Exception {
 		_indexer.reindex(new String[] {String.valueOf(companyId)});
 	}
 
-	public void searchNoOne(long userId, String keywords, Locale locale)
-		throws Exception {
+	public Document[] search(long userId, String keywords, Locale locale) {
+		try {
+			SearchContext searchContext =
+				SearchContextTestUtil.getSearchContext(
+					userId, keywords, locale);
 
-		SearchContext searchContext = SearchContextTestUtil.getSearchContext(
-			userId, keywords, locale);
+			Hits hits = _indexer.search(searchContext);
 
-		Hits hits = _indexer.search(searchContext);
-
-		HitsAssert.assertNoHits(hits);
+			return hits.getDocs();
+		}
+		catch (PortalException pe) {
+			throw new RuntimeException(pe);
+		}
 	}
 
-	public void searchNoOne(String keywords) throws Exception {
-		searchNoOne(TestPropsValues.getUserId(), keywords, null);
+	public Document[] search(String keywords) {
+		try {
+			return search(TestPropsValues.getUserId(), keywords, null);
+		}
+		catch (PortalException pe) {
+			throw new RuntimeException(pe);
+		}
 	}
 
-	public void searchNoOne(String keywords, Locale locale) throws Exception {
-		searchNoOne(TestPropsValues.getUserId(), keywords, locale);
+	public void searchNoOne(long userId, String keywords, Locale locale) {
+		try {
+			SearchContext searchContext =
+				SearchContextTestUtil.getSearchContext(
+					userId, keywords, locale);
+
+			Hits hits = _indexer.search(searchContext);
+
+			HitsAssert.assertNoHits(hits);
+		}
+		catch (PortalException pe) {
+			throw new RuntimeException(pe);
+		}
 	}
 
-	public Document searchOnlyOne(long userId, String keywords, Locale locale)
-		throws Exception {
-
-		SearchContext searchContext = SearchContextTestUtil.getSearchContext(
-			userId, keywords, locale);
-
-		Hits hits = _indexer.search(searchContext);
-
-		return HitsAssert.assertOnlyOne(hits);
+	public void searchNoOne(String keywords) {
+		try {
+			searchNoOne(TestPropsValues.getUserId(), keywords, null);
+		}
+		catch (PortalException pe) {
+			throw new RuntimeException(pe);
+		}
 	}
 
-	public Document searchOnlyOne(String keywords) throws Exception {
-		return searchOnlyOne(TestPropsValues.getUserId(), keywords, null);
+	public void searchNoOne(String keywords, Locale locale) {
+		try {
+			searchNoOne(TestPropsValues.getUserId(), keywords, locale);
+		}
+		catch (PortalException pe) {
+			throw new RuntimeException(pe);
+		}
 	}
 
-	public Document searchOnlyOne(String keywords, Locale locale)
-		throws Exception {
+	public Document searchOnlyOne(long userId, String keywords, Locale locale) {
+		try {
+			SearchContext searchContext =
+				SearchContextTestUtil.getSearchContext(
+					userId, keywords, locale);
 
-		return searchOnlyOne(TestPropsValues.getUserId(), keywords, locale);
+			Hits hits = _indexer.search(searchContext);
+
+			return HitsAssert.assertOnlyOne(hits);
+		}
+		catch (PortalException pe) {
+			throw new RuntimeException(pe);
+		}
+	}
+
+	public Document searchOnlyOne(String keywords) {
+		try {
+			return searchOnlyOne(TestPropsValues.getUserId(), keywords, null);
+		}
+		catch (PortalException pe) {
+			throw new RuntimeException(pe);
+		}
+	}
+
+	public Document searchOnlyOne(String keywords, Locale locale) {
+		try {
+			return searchOnlyOne(TestPropsValues.getUserId(), keywords, locale);
+		}
+		catch (PortalException pe) {
+			throw new RuntimeException(pe);
+		}
 	}
 
 	private final Indexer<T> _indexer;

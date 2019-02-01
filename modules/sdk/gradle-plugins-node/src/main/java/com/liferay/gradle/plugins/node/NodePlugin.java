@@ -40,12 +40,13 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.gradle.api.Action;
+import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UncheckedIOException;
+import org.gradle.api.file.CopySpec;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.FileCopyDetails;
 import org.gradle.api.internal.plugins.osgi.OsgiHelper;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
@@ -241,6 +242,24 @@ public class NodePlugin implements Plugin<Project> {
 		npmRunTask.setDescription("Runs the \"" + name + "\" NPM script.");
 		npmRunTask.setGroup(BasePlugin.BUILD_GROUP);
 		npmRunTask.setScriptName(name);
+
+		npmRunTask.doLast(
+			new Action<Task>() {
+
+				@Override
+				public void execute(Task task) {
+					NpmRunTask npmRunTask = (NpmRunTask)task;
+
+					String result = npmRunTask.getResult();
+
+					if (result.contains("errors during Soy compilation")) {
+						project.delete(npmRunTask.getSourceDigestFile());
+
+						throw new GradleException("Soy compile error");
+					}
+				}
+
+			});
 
 		if (taskName.equals(NPM_RUN_BUILD_TASK_NAME)) {
 			PluginContainer pluginContainer = project.getPlugins();
@@ -491,15 +510,6 @@ public class NodePlugin implements Plugin<Project> {
 
 		npmInstallTask.setNodeVersion(nodeExtension.getNodeVersion());
 		npmInstallTask.setNpmVersion(nodeExtension.getNpmVersion());
-
-		TaskOutputs taskOutputs = npmInstallTask.getOutputs();
-
-		if (!npmInstallTask.isCheckDigest()) {
-			taskOutputs.dir(npmInstallTask.getNodeModulesDir());
-		}
-		else {
-			taskOutputs.file(npmInstallTask.getNodeModulesDigestFile());
-		}
 	}
 
 	private void _configureTaskNpmRun(
@@ -544,7 +554,7 @@ public class NodePlugin implements Plugin<Project> {
 
 		classesTask.dependsOn(npmRunTask);
 
-		File sourceDigestFile = npmRunTask.getSourceDigestFile();
+		final File sourceDigestFile = npmRunTask.getSourceDigestFile();
 
 		if (!_isStale(sourceDigestFile, npmRunTask.getSourceFiles())) {
 			Project project = npmRunTask.getProject();
@@ -553,20 +563,64 @@ public class NodePlugin implements Plugin<Project> {
 				(ProcessResources)GradleUtil.getTask(
 					project, JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
 
-			processResourcesTask.eachFile(
-				new Action<FileCopyDetails>() {
+			processResourcesTask.doFirst(
+				new Action<Task>() {
 
 					@Override
-					public void execute(FileCopyDetails fileCopyDetails) {
-						String name = fileCopyDetails.getName();
+					public void execute(Task task) {
+						ProcessResources processResourcesTask =
+							(ProcessResources)task;
 
-						if (name.endsWith(".es.js")) {
-							File file = fileCopyDetails.getFile();
+						final File processResourcesDir =
+							processResourcesTask.getDestinationDir();
 
-							if (file.exists()) {
-								fileCopyDetails.exclude();
-							}
-						}
+						final File npmRunBuildOutputsDir = new File(
+							sourceDigestFile.getParentFile(), "outputs");
+
+						project.delete(npmRunBuildOutputsDir);
+
+						npmRunBuildOutputsDir.mkdirs();
+
+						project.copy(
+							new Action<CopySpec>() {
+
+								@Override
+								public void execute(CopySpec copySpec) {
+									copySpec.from(processResourcesDir);
+									copySpec.include("**/*.js");
+									copySpec.into(npmRunBuildOutputsDir);
+									copySpec.setIncludeEmptyDirs(false);
+								}
+
+							});
+					}
+
+				});
+
+			processResourcesTask.doLast(
+				new Action<Task>() {
+
+					@Override
+					public void execute(Task task) {
+						ProcessResources processResourcesTask =
+							(ProcessResources)task;
+
+						final File processResourcesDir =
+							processResourcesTask.getDestinationDir();
+
+						final File npmRunBuildOutputsDir = new File(
+							sourceDigestFile.getParentFile(), "outputs");
+
+						project.copy(
+							new Action<CopySpec>() {
+
+								@Override
+								public void execute(CopySpec copySpec) {
+									copySpec.from(npmRunBuildOutputsDir);
+									copySpec.into(processResourcesDir);
+								}
+
+							});
 					}
 
 				});

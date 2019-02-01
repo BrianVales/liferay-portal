@@ -122,6 +122,19 @@ public class UserImpl extends UserBaseImpl {
 		return _contact;
 	}
 
+	@Override
+	public String fetchPortraitURL(ThemeDisplay themeDisplay) {
+		Contact contact = fetchContact();
+
+		if (contact == null) {
+			return StringPool.BLANK;
+		}
+
+		return UserConstants.getPortraitURL(
+			themeDisplay.getPathImage(), contact.isMale(), getPortraitId(),
+			getUserUuid());
+	}
+
 	/**
 	 * Returns the user's addresses.
 	 *
@@ -330,8 +343,11 @@ public class UserImpl extends UserBaseImpl {
 		String profileFriendlyURL = getProfileFriendlyURL();
 
 		if (profileFriendlyURL != null) {
-			return portalURL.concat(PortalUtil.getPathContext()).concat(
-				profileFriendlyURL);
+			return portalURL.concat(
+				PortalUtil.getPathContext()
+			).concat(
+				profileFriendlyURL
+			);
 		}
 
 		return StringPool.BLANK;
@@ -416,7 +432,10 @@ public class UserImpl extends UserBaseImpl {
 			return PortalUtil.addPreservedParameters(
 				themeDisplay,
 				portalURL.concat(
-					PortalUtil.getPathContext()).concat(profileFriendlyURL));
+					PortalUtil.getPathContext()
+				).concat(
+					profileFriendlyURL
+				));
 		}
 
 		Group group = getGroup();

@@ -14,18 +14,17 @@
 
 package com.liferay.arquillian.extension.junit.bridge.observer;
 
-import com.liferay.arquillian.extension.junit.bridge.util.FrameworkMethodComparator;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.jboss.arquillian.core.api.annotation.Observes;
 import org.jboss.arquillian.core.spi.EventContext;
 import org.jboss.arquillian.test.spi.TestClass;
+import org.jboss.arquillian.test.spi.event.suite.SuiteEvent;
 import org.jboss.arquillian.test.spi.event.suite.Test;
 
 import org.junit.After;
@@ -90,7 +89,7 @@ public class JUnitBridgeObserver {
 		frameworkMethods.removeAll(
 			junitTestClass.getAnnotatedMethods(Ignore.class));
 
-		Collections.sort(frameworkMethods, FrameworkMethodComparator.INSTANCE);
+		frameworkMethods.sort(Comparator.comparing(FrameworkMethod::getName));
 
 		FrameworkMethod firstFrameworkMethod = frameworkMethods.get(0);
 
@@ -118,6 +117,26 @@ public class JUnitBridgeObserver {
 		evaluateWithClassRule(
 			statement, junitTestClass, target,
 			Description.createSuiteDescription(clazz), firstMethod, lastMethod);
+	}
+
+	public void suiteEvent(@Observes EventContext<SuiteEvent> eventContext) {
+		Thread currentThread = Thread.currentThread();
+
+		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
+
+		SuiteEvent suiteEvent = eventContext.getEvent();
+
+		Class<? extends SuiteEvent> suiteEventClass = suiteEvent.getClass();
+
+		try {
+			currentThread.setContextClassLoader(
+				suiteEventClass.getClassLoader());
+
+			eventContext.proceed();
+		}
+		finally {
+			currentThread.setContextClassLoader(contextClassLoader);
+		}
 	}
 
 	protected void evaluateWithClassRule(

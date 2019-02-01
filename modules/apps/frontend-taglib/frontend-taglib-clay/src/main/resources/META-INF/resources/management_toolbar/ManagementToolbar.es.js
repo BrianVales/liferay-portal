@@ -94,6 +94,14 @@ class ManagementToolbar extends ClayComponent {
 		}
 	}
 
+	_handleFilterLabelCloseClicked(event) {
+		let removeLabelURL = event.data.label.data && event.data.label.data.removeLabelURL;
+
+		if (removeLabelURL) {
+			Liferay.Util.navigate(removeLabelURL);
+		}
+	}
+
 	/**
 	 * Toggles the info panel
 	 * @param {!Event} event
@@ -159,7 +167,7 @@ class ManagementToolbar extends ClayComponent {
 					return Object.assign(
 						actionItem,
 						{
-							disabled: event.actions && !event.actions.includes(actionItem.data.action)
+							disabled: event.actions && event.actions.indexOf(actionItem.data.action) === -1
 						}
 					);
 				}

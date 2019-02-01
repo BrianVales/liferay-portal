@@ -15,10 +15,10 @@
 package com.liferay.source.formatter.checks;
 
 import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.tools.ToolsUtil;
@@ -532,7 +532,8 @@ public class JavaCombineLinesCheck extends BaseFileCheck {
 
 				if ((previousLine.endsWith(" =") ||
 					 previousLine.endsWith(" ->")) &&
-					line.endsWith(StringPool.OPEN_PARENTHESIS)) {
+					line.endsWith(StringPool.OPEN_PARENTHESIS) &&
+					!line.matches(".* [<=>]+ .*")) {
 
 					int level = getLevel(line);
 
@@ -701,7 +702,7 @@ public class JavaCombineLinesCheck extends BaseFileCheck {
 					if ((previousChar != CharPool.CLOSE_PARENTHESIS) &&
 						(previousChar != CharPool.OPEN_PARENTHESIS) &&
 						(previousChar != CharPool.SPACE) &&
-						(previousLineLength + 1 + x) < getMaxLineLength()) {
+						((previousLineLength + 1 + x) < getMaxLineLength())) {
 
 						String linePart = trimmedLine.substring(0, x + 1);
 
@@ -730,7 +731,7 @@ public class JavaCombineLinesCheck extends BaseFileCheck {
 				x = trimmedLine.indexOf("; ", x + 1);
 
 				if ((x == -1) ||
-					(previousLineLength + 2 + x) > getMaxLineLength()) {
+					((previousLineLength + 2 + x) > getMaxLineLength())) {
 
 					break;
 				}
@@ -819,7 +820,7 @@ public class JavaCombineLinesCheck extends BaseFileCheck {
 				x = trimmedLine.indexOf(" +", x + 1);
 
 				if ((x == -1) ||
-					(previousLineLength + 3 + x) > getMaxLineLength()) {
+					((previousLineLength + 3 + x) > getMaxLineLength())) {
 
 					break;
 				}
@@ -911,8 +912,8 @@ public class JavaCombineLinesCheck extends BaseFileCheck {
 					}
 				}
 				else if (!trimmedPreviousLine.startsWith(").") &&
-						 (trimmedLine.length() + previousLineLength) <
-							 getMaxLineLength()) {
+						 ((trimmedLine.length() + previousLineLength) <
+							 getMaxLineLength())) {
 
 					if ((getLevel(line, "{", "}") == 0) &&
 						(!trimmedLine.startsWith("new ") ||

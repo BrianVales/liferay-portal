@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +58,8 @@ public class TopLevelBuild extends BaseBuild {
 	public void addDownstreamBuilds(String... urls) {
 		super.addDownstreamBuilds(urls);
 
-		if (getDownstreamBuildCount("completed") <
-				getDownstreamBuildCount(null)) {
+		if (getDownstreamBuildCount("completed") < getDownstreamBuildCount(
+				null)) {
 
 			setResult(null);
 		}
@@ -233,6 +234,15 @@ public class TopLevelBuild extends BaseBuild {
 	}
 
 	@Override
+	public Map<String, String> getMetricLabels() {
+		Map<String, String> metricLabels = new HashMap<>();
+
+		metricLabels.put("top_level_job_name", getJobName());
+
+		return metricLabels;
+	}
+
+	@Override
 	public String getResult() {
 		String result = super.getResult();
 
@@ -347,6 +357,8 @@ public class TopLevelBuild extends BaseBuild {
 		super.update();
 
 		_updateDuration = System.currentTimeMillis() - start;
+
+		sendBuildMetricsOnModifiedBuilds();
 	}
 
 	protected TopLevelBuild(String url) {
@@ -355,6 +367,41 @@ public class TopLevelBuild extends BaseBuild {
 
 	protected TopLevelBuild(String url, TopLevelBuild topLevelBuild) {
 		super(url, topLevelBuild);
+
+		Properties buildProperties = null;
+
+		try {
+			buildProperties = JenkinsResultsParserUtil.getBuildProperties();
+		}
+		catch (IOException ioe) {
+			throw new RuntimeException("Unable to get build.properties", ioe);
+		}
+
+		_sendBuildMetrics = Boolean.valueOf(
+			buildProperties.getProperty("build.metrics.send"));
+
+		if (_sendBuildMetrics) {
+			_metricsHostName = buildProperties.getProperty(
+				"build.metrics.host.name");
+
+			String metricsHostPortString = buildProperties.getProperty(
+				"build.metrics.host.port");
+
+			if ((_metricsHostName == null) || (metricsHostPortString == null)) {
+				throw new IllegalArgumentException(
+					"Properties 'build.metrics.host.name' and " +
+						"'build.metrics.host.port' must be set to send build " +
+							"metrics");
+			}
+
+			try {
+				_metricsHostPort = Integer.parseInt(metricsHostPortString);
+			}
+			catch (NumberFormatException nfe) {
+				throw new IllegalArgumentException(
+					"Please set 'build.metrics.host.port' to an integer");
+			}
+		}
 	}
 
 	@Override
@@ -1330,6 +1377,58 @@ public class TopLevelBuild extends BaseBuild {
 		return _compareToUpstream;
 	}
 
+	protected void sendBuildMetrics(String message) {
+		if (_sendBuildMetrics) {
+			DatagramRequestUtil.send(
+				message, _metricsHostName, _metricsHostPort);
+		}
+	}
+
+	protected void sendBuildMetricsOnModifiedBuilds() {
+		sendBuildMetricsOnRecentlyCompletedDownstreamBuilds();
+		sendBuildMetricsOnRecentlyRunningDownstreamBuilds();
+	}
+
+	protected void sendBuildMetricsOnRecentlyCompletedDownstreamBuilds() {
+		List<Build> modifiedDownstreamBuilds =
+			getModifiedDownstreamBuildsByStatus("completed");
+
+		if (modifiedDownstreamBuilds.isEmpty()) {
+			return;
+		}
+
+		List<Build> ignoreDownstreamBuilds = new ArrayList<>();
+
+		for (Build downstreamBuild : modifiedDownstreamBuilds) {
+			long runningDuration = downstreamBuild.getStatusDuration("running");
+
+			if (runningDuration == 0) {
+				ignoreDownstreamBuilds.add(downstreamBuild);
+			}
+		}
+
+		modifiedDownstreamBuilds.removeAll(ignoreDownstreamBuilds);
+
+		sendBuildMetrics(
+			StatsDMetricsUtil.generateGaugeDeltaMetric(
+				"build_slave_usage_gauge", -modifiedDownstreamBuilds.size(),
+				null));
+	}
+
+	protected void sendBuildMetricsOnRecentlyRunningDownstreamBuilds() {
+		List<Build> modifiedDownstreamBuilds =
+			getModifiedDownstreamBuildsByStatus("running");
+
+		if (modifiedDownstreamBuilds.isEmpty()) {
+			return;
+		}
+
+		sendBuildMetrics(
+			StatsDMetricsUtil.generateGaugeDeltaMetric(
+				"build_slave_usage_value", modifiedDownstreamBuilds.size(),
+				null));
+	}
+
 	protected static final Pattern gitRepositoryTempMapNamePattern =
 		Pattern.compile("git\\.(?<gitRepositoryType>.*)\\.properties");
 
@@ -1361,6 +1460,9 @@ public class TopLevelBuild extends BaseBuild {
 
 	private boolean _compareToUpstream = true;
 	private long _lastDownstreamBuildsListingTimestamp = -1L;
+	private String _metricsHostName;
+	private int _metricsHostPort;
+	private final boolean _sendBuildMetrics;
 	private long _updateDuration;
 
 }
