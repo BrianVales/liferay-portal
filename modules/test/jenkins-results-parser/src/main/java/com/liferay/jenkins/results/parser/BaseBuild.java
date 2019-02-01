@@ -805,6 +805,10 @@ public abstract class BaseBuild implements Build {
 		return longestRunningTest;
 	}
 
+	public Map<String, String> getMetricLabels() {
+		return new HashMap<>();
+	}
+
 	@Override
 	public List<Build> getModifiedDownstreamBuilds() {
 		return getModifiedDownstreamBuildsByStatus(null);
